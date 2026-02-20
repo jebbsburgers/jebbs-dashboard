@@ -110,7 +110,6 @@ export function OrdersDashboard() {
       setPaymentDialogOpen(true);
     } else {
       updateStatus.mutate({ orderId: order.id, status: "completed" });
-      printOrder.mutate(order.id);
     }
   };
 
@@ -125,7 +124,6 @@ export function OrdersDashboard() {
             orderId: orderToComplete.id,
             status: "completed",
           });
-          printOrder.mutate(orderToComplete.id);
         },
       },
     );
