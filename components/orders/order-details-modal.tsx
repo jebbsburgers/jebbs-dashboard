@@ -1,0 +1,379 @@
+"use client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Car, Home, MapPin, User, Edit } from "lucide-react"; // 🆕 Importar Edit
+import type { Order } from "@/lib/types";
+import { useOrderWithItems } from "@/lib/hooks/orders/use-orders";
+import { formatCurrency } from "@/lib/utils/format";
+import { orderStatusConfig } from "@/lib/utils/order-status";
+
+interface OrderDetailsModalProps {
+  order: Order | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEditOrder?: (order: Order) => void; // 🆕
+}
+
+// 🆕 Interfaces para customizations
+interface BurgerCustomization {
+  burgerId: string;
+  name: string;
+  meatCount: number;
+  friesQuantity: number;
+  quantity: number;
+  removedIngredients: string[];
+  extras: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+}
+
+type SlotType = "burger" | "drink" | "side" | "fries" | "extra";
+
+interface ComboSlot {
+  slotId: string;
+  slotType: SlotType;
+  burgers: BurgerCustomization[];
+  selectedExtra?: {
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+  } | null;
+}
+
+const slotMetaMap: Record<
+  "drink" | "side" | "fries" | "extra",
+  { label: string; icon: string }
+> = {
+  drink: { label: "Bebida", icon: "🥤" },
+  side: { label: "Acompañamiento", icon: "🍗" },
+  fries: { label: "Papas", icon: "🍟" },
+  extra: { label: "Extra", icon: "➕" },
+};
+
+export function OrderDetailsModal({
+  order,
+  open,
+  onOpenChange,
+  onEditOrder, // 🆕
+}: OrderDetailsModalProps) {
+  const { data: orderWithItems, isLoading } = useOrderWithItems(
+    order?.id ?? null,
+  );
+  const config = order ? orderStatusConfig[order.status] : null;
+
+  // 🆕 Verificar si se puede editar (solo new y ready)
+  const canEdit = order && (order.status === "new" || order.status === "ready");
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between p-2">
+            <div className="flex items-center gap-3">
+              <DialogTitle className="font-mono text-xl">
+                Pedido #{order?.order_number}
+              </DialogTitle>
+              {config && (
+                <Badge className={config.className}>{config.label}</Badge>
+              )}
+            </div>
+
+            {canEdit && onEditOrder && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onOpenChange(false);
+                  onEditOrder(order);
+                }}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </Button>
+            )}
+          </div>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        ) : orderWithItems ? (
+          <div className="space-y-4">
+            {/* Cliente Info */}
+            <div className="rounded-lg bg-secondary/50 p-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <User className="h-4 w-4 text-muted-foreground" />
+                {orderWithItems.customer_name}
+              </div>
+
+              {/* 🆕 Dirección */}
+              {orderWithItems.customer_address && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  <span>
+                    {orderWithItems.customer_address.label} -{" "}
+                    {orderWithItems.customer_address.address}
+                  </span>
+                </div>
+              )}
+
+              {/* 🆕 Tipo de entrega con iconos */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {orderWithItems.delivery_type === "delivery" ? (
+                  <>
+                    <Car className="h-4 w-4" />
+                    <span>Envío a domicilio</span>
+                  </>
+                ) : (
+                  <>
+                    <Home className="h-4 w-4" />
+                    <span>Retira en el local</span>
+                  </>
+                )}
+              </div>
+
+              {/* 🆕 Método de pago con iconos */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>
+                  {orderWithItems.payment_method === "cash"
+                    ? "💵 - Efectivo"
+                    : "🏦 - Transferencia"}
+                </span>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Items del pedido */}
+            <div>
+              <h3 className="mb-3 font-semibold">Items del pedido</h3>
+              <div className="space-y-4">
+                {orderWithItems.items.map((item) => {
+                  let customizations: ComboSlot[] | null = null;
+                  if (item.customizations) {
+                    try {
+                      customizations = JSON.parse(item.customizations);
+                    } catch (e) {
+                      console.error("Failed to parse customizations:", e);
+                    }
+                  }
+
+                  const isCombo =
+                    item.combo_id &&
+                    customizations &&
+                    Array.isArray(customizations);
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-lg bg-secondary/30 p-4"
+                    >
+                      {/* Header del item */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-base">
+                            {item.quantity}x {item.burger_name}
+                          </p>
+                        </div>
+                        <p className="font-bold text-lg">
+                          {formatCurrency(item.subtotal)}
+                        </p>
+                      </div>
+
+                      {/* COMBO: Mostrar slots y burgers */}
+                      {isCombo && customizations ? (
+                        <div className="space-y-3 mt-3">
+                          {customizations.map((slot, slotIndex) => {
+                            return (
+                              <div
+                                key={slot.slotId || slotIndex}
+                                className="pl-3 border-l-2 border-primary/30"
+                              >
+                                {slot.burgers.map((burger, burgerIndex) => (
+                                  <div key={burgerIndex} className="mb-3">
+                                    <p className="font-medium text-sm">
+                                      {burger.quantity}x {burger.name}
+                                    </p>
+
+                                    <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                                      {burger.meatCount !== 2 && (
+                                        <p>
+                                          • {burger.meatCount}{" "}
+                                          {burger.meatCount === 1
+                                            ? "carne"
+                                            : "carnes"}
+                                        </p>
+                                      )}
+
+                                      {/* 🍟 PAPAS */}
+                                      {burger.friesQuantity === 0 && (
+                                        <p>•🍟 Sin papas</p>
+                                      )}
+
+                                      {burger.friesQuantity > 0 && (
+                                        <p>•🍟 {burger.friesQuantity}x Papas</p>
+                                      )}
+
+                                      {burger.removedIngredients.length > 0 && (
+                                        <p>
+                                          • Sin:{" "}
+                                          {burger.removedIngredients.join(", ")}
+                                        </p>
+                                      )}
+
+                                      {burger.extras.length > 0 && (
+                                        <div className="mt-1">
+                                          {burger.extras.map(
+                                            (extra, extraIndex) => (
+                                              <p key={extraIndex}>
+                                                • + {extra.quantity}x{" "}
+                                                {extra.name}{" "}
+                                                <span className="font-medium">
+                                                  (
+                                                  {formatCurrency(
+                                                    extra.price *
+                                                      extra.quantity,
+                                                  )}
+                                                  )
+                                                </span>
+                                              </p>
+                                            ),
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {/* 🆕 BEBIDAS Y NUGGETS */}
+                                {slot.selectedExtra &&
+                                  slot.slotType in slotMetaMap &&
+                                  (() => {
+                                    const meta =
+                                      slotMetaMap[
+                                        slot.slotType as keyof typeof slotMetaMap
+                                      ];
+
+                                    return (
+                                      <div className="mb-2">
+                                        <p className="font-medium text-sm">
+                                          {meta.icon} {meta.label}:{" "}
+                                          {slot.selectedExtra.quantity}x{" "}
+                                          {slot.selectedExtra.name}
+                                        </p>
+
+                                        {slot.selectedExtra.price > 0 && (
+                                          <p className="text-xs text-muted-foreground">
+                                            +
+                                            {formatCurrency(
+                                              slot.selectedExtra.price,
+                                            )}
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <>
+                          {item.customizations && !isCombo && (
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              {item.customizations}
+                            </p>
+                          )}
+                        </>
+                      )}
+
+                      {/* Extras del item (fuera del combo) */}
+                      {item.extras && item.extras.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-border/50 space-y-1">
+                          {item.extras.map((extra) => (
+                            <div
+                              key={extra.id}
+                              className="flex justify-between text-sm"
+                            >
+                              <span className="text-muted-foreground">
+                                + {extra.quantity}x {extra.extra_name}
+                              </span>
+                              <span className="font-medium">
+                                {formatCurrency(extra.subtotal)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Costos adicionales */}
+            {orderWithItems.delivery_fee > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Envío</span>
+                <span className="font-medium">
+                  {formatCurrency(orderWithItems.delivery_fee)}
+                </span>
+              </div>
+            )}
+
+            {orderWithItems.discount_amount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>
+                  Descuento
+                  {orderWithItems.discount_type === "percentage" &&
+                    ` (${orderWithItems.discount_value}%)`}
+                </span>
+                <span className="font-medium">
+                  -{formatCurrency(orderWithItems.discount_amount)}
+                </span>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Total */}
+            <div className="flex items-center justify-between">
+              <span className="text-lg font-semibold">Total</span>
+              <span className="text-2xl font-bold text-primary">
+                {formatCurrency(orderWithItems.total_amount)}
+              </span>
+            </div>
+
+            {/* Notas */}
+            {orderWithItems.notes && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="mb-2 font-semibold">Notas</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {orderWithItems.notes}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
