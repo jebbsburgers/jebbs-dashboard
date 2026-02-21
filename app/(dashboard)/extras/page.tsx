@@ -142,7 +142,7 @@ export default function ExtrasPage() {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="flex h-screen flex-col ios-blur">
+    <div className="flex h-screen flex-col">
       <Header
         title="Extras"
         subtitle="Administra extras, bebidas, papas y acompañamientos"
@@ -185,7 +185,7 @@ export default function ExtrasPage() {
       </div>
 
       {/* LIST */}
-      <div className="flex-1 overflow-auto p-6 rounded-md ios-glass">
+      <div className="flex-1 overflow-auto p-6 rounded-md ios-glass bg-card">
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -198,7 +198,7 @@ export default function ExtrasPage() {
               <Card
                 key={extra.id}
                 className={cn(
-                  "group bg-secondary/30 transition-all hover:scale-[1.01]",
+                  "group transition-all hover:scale-[1.01] bg-card",
                   !extra.is_available && "opacity-50",
                 )}
               >
@@ -215,7 +215,7 @@ export default function ExtrasPage() {
                       {formatCurrency(extra.price)}
                     </span>
 
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs bg-card">
                       {extra.is_available ? "Activo" : "Inactivo"}
                     </Badge>
 
@@ -258,7 +258,7 @@ export default function ExtrasPage() {
 
       {/* PAGINATION */}
       {totalPages > 1 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 ios-glass rounded-full px-4 py-2 flex items-center gap-2">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 ios-glass rounded-full px-4 py-2 flex items-center gap-2 bg-card">
           <Button
             size="sm"
             variant="ghost"

@@ -170,7 +170,11 @@ export function useOrderWizard({
           friesExtra,
         );
 
-      console.log("Items transformados:", items);
+      // 👇 AGREGÁ ESTO
+      console.log("=== ITEMS TRANSFORMADOS ===");
+      items.forEach((item) => {
+        console.log(`${item.burger_name}:`, item.customizations);
+      });
 
       if (!items || items.length === 0) {
         throw new Error("No hay items en el pedido");
@@ -256,7 +260,11 @@ export function useOrderWizard({
       }
 
       // 🔥 Imprimir automáticamente
-      await printOrder.mutateAsync(orderId);
+      try {
+        await printOrder.mutateAsync(orderId);
+      } catch (printError) {
+        console.warn("⚠️ No se pudo imprimir automáticamente:", printError);
+      }
 
       console.log("=== ORDEN PROCESADA EXITOSAMENTE ===");
     } catch (error) {

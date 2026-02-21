@@ -148,7 +148,7 @@ export function CombosStep({
             .map((combo) => (
               <Card
                 key={combo.id}
-                className="cursor-pointer hover:shadow-sm"
+                className="cursor-pointer hover:shadow-sm bg-card"
                 onClick={() => onAddCombo(combo)}
               >
                 <CardContent className="p-3">

@@ -264,7 +264,7 @@ export default function MenuPage() {
               <Card
                 key={burger.id}
                 className={cn(
-                  "group overflow-hidden transition-all hover:shadow-lg pt-0 ",
+                  "group overflow-hidden transition-all hover:shadow-lg pt-0 bg-card",
                   !burger.is_available && "opacity-60",
                 )}
               >
@@ -312,12 +312,16 @@ export default function MenuPage() {
                   {burger.ingredients.length > 0 && (
                     <div className="mb-4 flex flex-wrap gap-1">
                       {burger.ingredients.slice(0, 3).map((ing) => (
-                        <Badge key={ing} variant="outline" className="text-xs">
+                        <Badge
+                          key={ing}
+                          variant="outline"
+                          className="text-xs bg-card"
+                        >
                           {ing}
                         </Badge>
                       ))}
                       {burger.ingredients.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs bg-card">
                           +{burger.ingredients.length - 3}
                         </Badge>
                       )}
@@ -329,7 +333,7 @@ export default function MenuPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="flex-1 bg-card"
                       onClick={() => handleOpenEdit(burger)}
                     >
                       <Edit className="mr-2 h-4 w-4" />
@@ -340,6 +344,7 @@ export default function MenuPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleToggleAvailability(burger)}
+                      className="bg-card"
                       title={burger.is_available ? "Ocultar" : "Activar"}
                     >
                       {burger.is_available ? (
@@ -352,7 +357,7 @@ export default function MenuPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive bg-card"
                       onClick={() => {
                         setDeletingBurger(burger);
                         setDeleteDialogOpen(true);

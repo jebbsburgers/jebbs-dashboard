@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { User, MapPin, Phone, Info, AlertCircle } from "lucide-react";
+import { User, MapPin, Phone, Info, AlertCircle, Clock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
 import { CustomerAddress } from "@/lib/types";
 import { useMemo } from "react";
@@ -105,6 +105,10 @@ interface SummaryStepProps {
   // Notes
   notes: string;
   onNotesChange: (notes: string) => void;
+
+  // 🆕 Delivery Time
+  deliveryTime?: string;
+  onDeliveryTimeChange?: (time: string) => void;
 }
 
 export function SummaryStep({
@@ -133,6 +137,8 @@ export function SummaryStep({
   onDiscountValueChange,
   notes,
   onNotesChange,
+  onDeliveryTimeChange,
+  deliveryTime,
 }: SummaryStepProps) {
   // Validar si tiene dirección disponible
   const hasAddress = useMemo(() => {
@@ -145,7 +151,7 @@ export function SummaryStep({
   return (
     <div className="space-y-6">
       {/* Customer Info */}
-      <Card>
+      <Card className="bg-card">
         <CardContent className="p-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm space-y-2">
             {/* Name */}
@@ -195,7 +201,7 @@ export function SummaryStep({
       </Card>
 
       {/* Payment Method - 🆕 CON RADIOGROUP */}
-      <Card>
+      <Card className="bg-card">
         <CardContent className="p-4 space-y-3">
           <h3 className="text-sm font-medium">Método de pago</h3>
 
@@ -223,7 +229,7 @@ export function SummaryStep({
       </Card>
 
       {/* Delivery - CON VALIDACIÓN */}
-      <Card>
+      <Card className="bg-card">
         <CardContent className="p-4 space-y-4">
           <h3 className="text-sm font-medium">Entrega</h3>
 
@@ -310,11 +316,37 @@ export function SummaryStep({
               />
             </div>
           )}
+
+          {/* 🆕 Horario - PARA AMBOS (delivery y pickup) */}
+          {onDeliveryTimeChange && (
+            <div className="space-y-2">
+              <Label htmlFor="deliveryTime" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                {deliveryType === "delivery"
+                  ? "Horario de Entrega"
+                  : "Horario de Retiro"}{" "}
+                (Opcional)
+              </Label>
+              <Input
+                id="deliveryTime"
+                type="time"
+                value={deliveryTime || ""}
+                onChange={(e) => onDeliveryTimeChange(e.target.value)}
+                placeholder="HH:MM"
+                className="bg-card"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {deliveryType === "delivery"
+                  ? "Hora en que se entregará el pedido"
+                  : "Hora en que el cliente retirará el pedido"}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Discount - 🆕 CON RADIOGROUP */}
-      <Card>
+      <Card className="bg-card">
         <CardContent className="p-4 space-y-4">
           <h3 className="text-sm font-medium">Descuento</h3>
 
@@ -402,7 +434,7 @@ export function SummaryStep({
       </Card>
 
       {/* Order Summary */}
-      <Card>
+      <Card className="bg-card">
         <CardContent className="p-4">
           <h3 className="mb-3 text-sm font-medium">Pedido</h3>
 

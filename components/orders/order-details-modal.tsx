@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, Home, MapPin, User, Edit } from "lucide-react"; // 🆕 Importar Edit
+import { Car, Home, MapPin, User, Edit, Clock } from "lucide-react"; // 🆕 Importar Edit
 import type { Order } from "@/lib/types";
 import { useOrderWithItems } from "@/lib/hooks/orders/use-orders";
 import { formatCurrency } from "@/lib/utils/format";
@@ -77,9 +77,11 @@ export function OrderDetailsModal({
   // 🆕 Verificar si se puede editar (solo new y ready)
   const canEdit = order && (order.status === "new" || order.status === "ready");
 
+  console.log(order, "order");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card">
         <DialogHeader>
           <div className="flex items-center justify-between p-2">
             <div className="flex items-center gap-3">
@@ -95,6 +97,7 @@ export function OrderDetailsModal({
               <Button
                 variant="outline"
                 size="sm"
+                className="bg-card"
                 onClick={() => {
                   onOpenChange(false);
                   onEditOrder(order);
@@ -146,6 +149,21 @@ export function OrderDetailsModal({
                   </>
                 )}
               </div>
+
+              {/* 🆕 Horario de Entrega/Retiro */}
+              {orderWithItems.delivery_time && (
+                <div className="flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-3 py-2 rounded-md">
+                  <Clock className="h-4 w-4" />
+                  <span>
+                    {orderWithItems.delivery_type === "delivery"
+                      ? "🚚 Entregar a las:"
+                      : "🏪 Retirar a las:"}{" "}
+                    <span className="font-bold">
+                      {orderWithItems.delivery_time}
+                    </span>
+                  </span>
+                </div>
+              )}
 
               {/* 🆕 Método de pago con iconos */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -294,11 +312,66 @@ export function OrderDetailsModal({
                         </div>
                       ) : (
                         <>
-                          {item.customizations && !isCombo && (
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              {item.customizations}
-                            </p>
-                          )}
+                          {item.customizations &&
+                            !isCombo &&
+                            (() => {
+                              let singleData: any = null;
+                              try {
+                                singleData = JSON.parse(item.customizations!);
+                              } catch {}
+
+                              if (!singleData)
+                                return (
+                                  <p className="mt-2 text-sm text-muted-foreground">
+                                    {item.customizations}
+                                  </p>
+                                );
+
+                              const sizeLabel =
+                                singleData.meatCount === 1
+                                  ? "Simple"
+                                  : singleData.meatCount === 2
+                                    ? "Doble"
+                                    : singleData.meatCount === 3
+                                      ? "Triple"
+                                      : `${singleData.meatCount} carnes`;
+
+                              return (
+                                <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                                  <p>• {sizeLabel}</p>
+
+                                  {singleData.friesQuantity === 0 && (
+                                    <p>• 🍟 Sin papas</p>
+                                  )}
+                                  {singleData.friesQuantity > 0 && (
+                                    <p>
+                                      • 🍟 {singleData.friesQuantity}x Papas
+                                    </p>
+                                  )}
+
+                                  {singleData.removedIngredients?.length >
+                                    0 && (
+                                    <p>
+                                      • Sin:{" "}
+                                      {singleData.removedIngredients.join(", ")}
+                                    </p>
+                                  )}
+
+                                  {singleData.extras?.length > 0 &&
+                                    singleData.extras.map(
+                                      (extra: any, i: number) => (
+                                        <p key={i}>
+                                          • + {extra.quantity}x {extra.name} (
+                                          {formatCurrency(
+                                            extra.price * extra.quantity,
+                                          )}
+                                          )
+                                        </p>
+                                      ),
+                                    )}
+                                </div>
+                              );
+                            })()}
                         </>
                       )}
 

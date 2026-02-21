@@ -72,7 +72,7 @@ export default function PricingPage() {
           </TabsList>
 
           <TabsContent value="burgers">
-            <Card>
+            <Card className="bg-card">
               <CardHeader>
                 <CardTitle>Precios de Hamburguesas</CardTitle>
               </CardHeader>
@@ -159,7 +159,7 @@ export default function PricingPage() {
 
             return (
               <TabsContent key={tab} value={tab}>
-                <Card>
+                <Card className="bg-card">
                   <CardHeader>
                     <CardTitle>Precios de {categoryLabels[category]}</CardTitle>
                   </CardHeader>
@@ -175,7 +175,7 @@ export default function PricingPage() {
                         {filteredExtras.map((extra) => (
                           <div
                             key={extra.id}
-                            className="flex items-center justify-between rounded-lg bg-secondary/30 p-3"
+                            className="flex items-center justify-between rounded-lg bg-secondary/30 p-3 bg0"
                           >
                             <div className="flex items-center gap-3">
                               <span className="font-medium">{extra.name}</span>

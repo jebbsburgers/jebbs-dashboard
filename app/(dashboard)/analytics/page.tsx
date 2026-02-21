@@ -125,13 +125,23 @@ export default function AnalyticsPage() {
 
       <div className="flex-1 overflow-auto py-4">
         <div className="mb-6 flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handlePrevMonth}
+            className="bg-card"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="min-w-45 text-center font-medium capitalize">
             {monthLabel}
           </span>
-          <Button variant="outline" size="icon" onClick={handleNextMonth}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleNextMonth}
+            className="bg-card"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -147,7 +157,7 @@ export default function AnalyticsPage() {
             {metrics.map((metric) => {
               const isPositive = metric.change >= 0;
               return (
-                <Card key={metric.title} className="ios-glass p-0">
+                <Card key={metric.title} className="ios-glass p-0 bg-card">
                   <CardContent className="h-full flex-col justify-between p-6">
                     <div className="flex items-center justify-between">
                       <div
@@ -195,7 +205,7 @@ export default function AnalyticsPage() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           {/* Pedidos */}
-          <Card className="ios-glass">
+          <Card className="ios-glass bg-card">
             <CardHeader>
               <CardTitle>Pedidos por día</CardTitle>
             </CardHeader>
@@ -242,7 +252,7 @@ export default function AnalyticsPage() {
           </Card>
 
           {/* Ingresos */}
-          <Card className="ios-glass">
+          <Card className="ios-glass bg-card">
             <CardHeader>
               <CardTitle>Ingresos por día</CardTitle>
             </CardHeader>
@@ -298,7 +308,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Comparativa */}
-        <Card className="mt-6 ios-glass">
+        <Card className="mt-6 ios-glass bg-card">
           <CardHeader>
             <CardTitle>Comparativa últimos 3 meses</CardTitle>
           </CardHeader>

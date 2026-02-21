@@ -143,6 +143,14 @@ export function OrdersDashboard() {
     }
   };
 
+  const handleChangeStatus = (order: Order) => {
+    if (order.status === "new") {
+      updateStatus.mutate({ orderId: order.id, status: "ready" });
+    } else if (order.status === "ready") {
+      handleCompleteOrder(order); // reutiliza el flujo de pago
+    }
+  };
+
   const readyOrders = orders?.filter((o) => o.status === "ready") ?? [];
 
   return (
@@ -186,6 +194,7 @@ export function OrdersDashboard() {
                         setDetailsOpen(true);
                       }}
                       onEditOrder={handleEditOrder}
+                      onChangeStatus={handleChangeStatus} // 👈
                       accentColor="bg-blue-500"
                     />
                     <OrderColumn
@@ -197,6 +206,7 @@ export function OrdersDashboard() {
                         setDetailsOpen(true);
                       }}
                       onEditOrder={handleEditOrder}
+                      onChangeStatus={handleChangeStatus} // 👈
                       accentColor="bg-green-500"
                     />
                   </div>

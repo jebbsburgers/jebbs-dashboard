@@ -5,7 +5,7 @@ import type React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Eye, User, DollarSign, Edit } from "lucide-react";
+import { Clock, Eye, User, DollarSign, Edit, ArrowRight } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
 import { useTogglePaymentStatus } from "@/lib/hooks/orders/use-orders";
@@ -24,6 +24,7 @@ interface OrderCardProps {
   onEditOrder?: (order: Order) => void;
   isDragging?: boolean;
   visualStatus?: Order["status"];
+  onChangeStatus?: (order: Order) => void;
 }
 
 export function OrderCard({
@@ -31,6 +32,7 @@ export function OrderCard({
   onViewDetails,
   onEditOrder,
   isDragging,
+  onChangeStatus,
   visualStatus = order.status,
 }: OrderCardProps) {
   const canEdit = order.status === "new" || order.status === "ready";
@@ -124,7 +126,25 @@ export function OrderCard({
               <Eye className="mr-1.5 h-4 w-4" />
               Ver detalles
             </Button>
+            {/* 👇 NUEVO BOTÓN */}
           </div>
+        </div>
+        <div className="mt-8 w-full flex justify-end">
+          {onChangeStatus &&
+            (order.status === "new" || order.status === "ready") && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer bg-card"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChangeStatus(order);
+                }}
+              >
+                <ArrowRight className="mr-1.5 h-4 w-4" />
+                {order.status === "new" ? "Listo" : "Completar"}
+              </Button>
+            )}
         </div>
       </CardContent>
     </Card>

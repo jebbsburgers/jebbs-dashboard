@@ -23,6 +23,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Eye,
   Printer,
@@ -237,96 +239,132 @@ export default function OrdersHistoryPage() {
                 ))}
               </div>
             ) : orders && orders.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Pedido</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Fecha/Hora</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedOrders.map((order) => {
-                    const config = orderStatusConfig[order.status];
-                    return (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-mono font-medium">
-                          #{order.order_number}
-                        </TableCell>
-                        <TableCell>{order.customer_name}</TableCell>
-                        <TableCell>
-                          <Badge className={config.className}>
-                            {config.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(order.total_amount)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDateTime(order.created_at)}
-                        </TableCell>
-                        <TableCell className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetails(order)}
-                            className="cursor-pointer"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => printOrder.mutate(order.id)}
-                            className="cursor-pointer"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              console.log(order, "order");
-                              const text = formatOrderForWhatsapp(order);
-                              await navigator.clipboard.writeText(text);
-
-                              toast.success("Pedido copiado para WhatsApp");
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-
-                          {order.status === "canceled" ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleReactivateOrder(order)}
-                              className="cursor-pointer"
-                            >
-                              <RotateCcw className="h-4 w-4 text-emerald-600" />
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCancelOrder(order)}
-                              className="cursor-pointer"
-                            >
-                              <Trash className="h-4 w-4 text-red-600" />
-                            </Button>
-                          )}
-                        </TableCell>
+              <div className="flex flex-col gap-4">
+                <div className="overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Pedido</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Fecha/Hora</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedOrders.map((order) => {
+                        const config = orderStatusConfig[order.status];
+                        return (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-mono font-medium">
+                              #{order.order_number}
+                            </TableCell>
+                            <TableCell>{order.customer_name}</TableCell>
+                            <TableCell>
+                              <Badge className={config.className}>
+                                {config.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {formatCurrency(order.total_amount)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatDateTime(order.created_at)}
+                            </TableCell>
+                            <TableCell className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewDetails(order)}
+                                className="cursor-pointer"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => printOrder.mutate(order.id)}
+                                className="cursor-pointer"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  const text = formatOrderForWhatsapp(order);
+                                  await navigator.clipboard.writeText(text);
+                                  toast.success("Pedido copiado para WhatsApp");
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              {order.status === "canceled" ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleReactivateOrder(order)}
+                                  className="cursor-pointer"
+                                >
+                                  <RotateCcw className="h-4 w-4 text-emerald-600" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCancelOrder(order)}
+                                  className="cursor-pointer"
+                                >
+                                  <Trash className="h-4 w-4 text-red-600" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* 👉 Controles de paginación */}
+                {orders.length > pageSize && (
+                  <div className="flex items-center justify-between border-t pt-4">
+                    <span className="text-sm text-muted-foreground">
+                      Mostrando {page * pageSize + 1}–
+                      {Math.min((page + 1) * pageSize, orders.length)} de{" "}
+                      {orders.length} pedidos
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => p - 1)}
+                        disabled={page === 0}
+                        className="bg-card"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Anterior
+                      </Button>
+                      <span className="text-sm font-medium">
+                        Página {page + 1} de{" "}
+                        {Math.ceil(orders.length / pageSize)}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => p + 1)}
+                        disabled={(page + 1) * pageSize >= orders.length}
+                        className="bg-card"
+                      >
+                        Siguiente
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="py-12 text-center text-muted-foreground">
                 No hay pedidos para el período seleccionado

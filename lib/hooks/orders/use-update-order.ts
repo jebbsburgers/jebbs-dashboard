@@ -73,6 +73,7 @@ export function useUpdateOrder() {
           delivery_type: payload.delivery_type,
           delivery_fee: payload.delivery_fee,
           payment_method: payload.payment_method,
+          delivery_time: payload.delivery_time, // 🆕 Agregar aquí también
           discount_type: payload.discount_type,
           discount_value: payload.discount_value,
           discount_amount: payload.discount_amount,

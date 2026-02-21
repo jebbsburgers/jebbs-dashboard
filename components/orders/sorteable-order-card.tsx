@@ -9,10 +9,12 @@ export function SortableOrderCard({
   order,
   onViewDetails,
   onEditOrder, // 🆕
+  onChangeStatus,
 }: {
   order: Order;
   onViewDetails: (order: Order) => void;
   onEditOrder?: (order: Order) => void; // 🆕
+  onChangeStatus?: (order: Order) => void;
 }) {
   const {
     attributes,
@@ -55,6 +57,7 @@ export function SortableOrderCard({
           isDragging={isDragging}
           visualStatus={order.status}
           onEditOrder={onEditOrder} // 🆕
+          onChangeStatus={onChangeStatus}
         />
       </div>
     </>

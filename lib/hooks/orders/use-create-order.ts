@@ -91,6 +91,11 @@ export function useCreateOrder() {
       if (error) throw error;
 
       for (const item of input.items) {
+        console.log(
+          `💾 ${item.burger_name} customizations:`,
+          item.customizations,
+        );
+
         const { data: orderItem, error: itemError } = await supabase
           .from("order_items")
           .insert({

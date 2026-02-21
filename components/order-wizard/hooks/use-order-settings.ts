@@ -1,3 +1,4 @@
+import { DiscountType, PaymentMethod } from "@/lib/types";
 import { useState } from "react";
 
 export function useOrderSettings() {
@@ -13,23 +14,26 @@ export function useOrderSettings() {
     "amount" | "percentage" | "none"
   >("none");
   const [discountValue, setDiscountValue] = useState(0);
+  const [deliveryTime, setDeliveryTime] = useState(""); // 🆕 Horario de entrega
 
   const reset = () => {
-    setDeliveryType("pickup");
-    setDeliveryFee(0);
-    setPaymentMethod("cash");
-    setNotes("");
+    setDeliveryType("delivery");
+    setDeliveryFee(2000);
+    setPaymentMethod("transfer");
     setDiscountType("none");
     setDiscountValue(0);
+    setNotes("");
+    setDeliveryTime(""); // 🆕
   };
 
   const loadSettings = (settings: {
-    deliveryType: "delivery" | "pickup";
+    deliveryType: DeliveryType;
     deliveryFee: number;
-    paymentMethod: "cash" | "transfer";
-    discountType: "amount" | "percentage" | "none";
+    paymentMethod: PaymentMethod;
+    discountType: DiscountType;
     discountValue: number;
     notes: string;
+    deliveryTime?: string; // 🆕
   }) => {
     setDeliveryType(settings.deliveryType);
     setDeliveryFee(settings.deliveryFee);
@@ -37,32 +41,25 @@ export function useOrderSettings() {
     setDiscountType(settings.discountType);
     setDiscountValue(settings.discountValue);
     setNotes(settings.notes);
+    setDeliveryTime(settings.deliveryTime || ""); // 🆕
   };
 
   return {
-    // Delivery
     deliveryType,
     setDeliveryType,
     deliveryFee,
     setDeliveryFee,
-
-    // Payment
     paymentMethod,
     setPaymentMethod,
-
-    // Notes
-    notes,
-    setNotes,
-
-    // 🆕 Discounts
     discountType,
     setDiscountType,
     discountValue,
     setDiscountValue,
-
-    loadSettings,
-
-    // Actions
+    notes,
+    setNotes,
+    deliveryTime, // 🆕
+    setDeliveryTime, // 🆕
     reset,
+    loadSettings,
   };
 }

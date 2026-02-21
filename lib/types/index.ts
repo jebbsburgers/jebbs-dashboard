@@ -76,6 +76,7 @@ export interface Order {
   delivery_type: DeliveryType; // 🆕 Agregado de DB
   delivery_fee: number; // 🆕 Agregado de DB
   payment_method: PaymentMethod; // 🆕 Agregado de DB
+  delivery_time: string | null; // 🆕 AGREGAR
   discount_type: DiscountType | null; // 🆕 Agregado de DB
   discount_value: number; // 🆕 Agregado de DB
   discount_amount: number; // 🆕 Agregado de DB

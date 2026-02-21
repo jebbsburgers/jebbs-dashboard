@@ -39,6 +39,7 @@ function loadSettings(order: OrderWithItems) {
   return {
     deliveryType: order.delivery_type as "delivery" | "pickup",
     deliveryFee: order.delivery_fee || 0,
+    deliveryTime: order.delivery_time || "", // 🆕 CRÍTICO para edición
     paymentMethod: order.payment_method as "cash" | "transfer",
     discountType:
       (order.discount_type as "amount" | "percentage" | "none") || "none",
@@ -46,7 +47,6 @@ function loadSettings(order: OrderWithItems) {
     notes: order.notes || "",
   };
 }
-
 /**
  * Carga burgers individuales (items sin combo_id)
  */

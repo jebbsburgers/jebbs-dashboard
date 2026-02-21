@@ -122,7 +122,7 @@ export function SelectedBurgerCard({
   };
 
   return (
-    <Card>
+    <Card className="bg-card">
       <CardContent className="p-3">
         {/* HEADER */}
         <div className="flex items-start justify-between">
@@ -196,7 +196,7 @@ export function SelectedBurgerCard({
                         key={ingredient}
                         variant={isRemoved ? "secondary" : "outline"}
                         className={cn(
-                          "cursor-pointer transition-colors",
+                          "cursor-pointer transition-colors bg-card",
                           isRemoved && "line-through opacity-60",
                         )}
                         onClick={() => onToggleIngredient(ingredient)}
@@ -222,7 +222,7 @@ export function SelectedBurgerCard({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-7 w-7 bg-card"
                       disabled={item.meatCount <= 1}
                       onClick={() => onUpdateMeatCount(-1)}
                     >
@@ -236,7 +236,7 @@ export function SelectedBurgerCard({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-7 w-7 bg-card"
                       onClick={() => onUpdateMeatCount(1)}
                     >
                       <Plus className="h-3 w-3" />
@@ -260,7 +260,7 @@ export function SelectedBurgerCard({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-7 w-7 bg-card"
                       disabled={item.friesQuantity <= 0}
                       onClick={() => onUpdateFriesCount(-1)}
                     >
@@ -274,7 +274,7 @@ export function SelectedBurgerCard({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-7 w-7 bg-card"
                       onClick={() => onUpdateFriesCount(1)}
                     >
                       <Plus className="h-3 w-3" />
@@ -320,7 +320,7 @@ export function SelectedBurgerCard({
                           <Badge
                             key={extra.id}
                             variant={selected ? "default" : "outline"}
-                            className="cursor-pointer"
+                            className="cursor-pointer bg-card"
                             onClick={() => onToggleExtra(extra)}
                           >
                             {extra.name} +{formatCurrency(extra.price)}

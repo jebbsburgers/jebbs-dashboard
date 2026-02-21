@@ -85,6 +85,9 @@ export function OrderWizardDrawer({
     allExtras: extras || [], // 🆕
   });
 
+  console.log("🍟 friesExtra:", friesExtra);
+  console.log("🥩 meatExtra:", meatExtra);
+
   // ================= CUSTOMER ADDRESSES =================
   const { data: customerAddresses, isLoading: isLoadingAddresses } =
     useCustomerAddresses(wizard.customer.selectedCustomer?.id);
@@ -294,6 +297,8 @@ export function OrderWizardDrawer({
                   onPaymentMethodChange={wizard.settings.setPaymentMethod}
                   notes={wizard.settings.notes}
                   onNotesChange={wizard.settings.setNotes}
+                  deliveryTime={wizard.settings.deliveryTime}
+                  onDeliveryTimeChange={wizard.settings.setDeliveryTime}
                 />
               )}
             </div>
@@ -310,6 +315,7 @@ export function OrderWizardDrawer({
                   else if (step === "burgers") setStep("combos");
                   else if (step === "summary") setStep("burgers");
                 }}
+                className="bg-card"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Atrás

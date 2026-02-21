@@ -70,7 +70,7 @@ export function BurgersStep({
           {availableBurgers?.map((burger) => (
             <Card
               key={burger.id}
-              className="cursor-pointer transition-all hover:shadow-sm"
+              className="cursor-pointer transition-all hover:shadow-sm bg-card"
               onClick={() => onAddBurger(burger)}
             >
               <CardContent className="p-3">

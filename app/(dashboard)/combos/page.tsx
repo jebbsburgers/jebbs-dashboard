@@ -34,7 +34,7 @@ import {
 } from "@/lib/hooks/use-combos";
 import { formatCurrency } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
-import type { Combo } from "@/lib/types/combo";
+import { Combo } from "@/lib/types/combo-types";
 
 /* -------------------------------------------------- */
 
@@ -177,7 +177,7 @@ export default function CombosPage() {
   /* ---------- UI ---------- */
 
   return (
-    <div className="flex h-screen flex-col ios-blur">
+    <div className="flex h-screen flex-col">
       <Header
         title="Combos"
         subtitle="Creá y administrá combos reutilizando items existentes"
@@ -190,7 +190,7 @@ export default function CombosPage() {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 ios-glass rounded-lg">
+      <div className="flex-1 overflow-auto p-6 ios-glass rounded-lg bg-card">
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -207,7 +207,7 @@ export default function CombosPage() {
               <Card
                 key={combo.id}
                 className={cn(
-                  "group bg-secondary/30 transition-all",
+                  "group  transition-all bg-card",
                   !combo.is_available && "opacity-50",
                 )}
               >

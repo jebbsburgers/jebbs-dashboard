@@ -1,5 +1,5 @@
 import type { OrderItemInput } from "@/lib/hooks/orders/use-create-order";
-import type { SelectedBurger } from "../hooks/use-burger-selection";
+import { SelectedBurger } from "@/lib/types/combo-types";
 
 interface SelectedComboSlot {
   slotId: string;
@@ -24,6 +24,19 @@ export class OrderDataTransformer {
     return burgers.map((item) => {
       const unitPrice = item.burger.base_price + item.meatPriceAdjustment;
 
+      // ✅ Siempre guardar customizations como JSON
+      const customizationData = {
+        meatCount: item.meatCount,
+        friesQuantity: item.friesQuantity,
+        removedIngredients: item.removedIngredients,
+        extras: item.selectedExtras.map((ext) => ({
+          id: ext.extra.id,
+          name: ext.extra.name,
+          quantity: ext.quantity,
+          price: ext.extra.price,
+        })),
+      };
+
       return {
         burger_id: item.burger.id,
         combo_id: null,
@@ -31,10 +44,7 @@ export class OrderDataTransformer {
         quantity: item.quantity,
         unit_price: unitPrice,
         subtotal: unitPrice * item.quantity,
-        customizations:
-          item.removedIngredients.length > 0
-            ? `Sin: ${item.removedIngredients.join(", ")}`
-            : undefined,
+        customizations: JSON.stringify(customizationData),
         extras: item.selectedExtras.map((ext) => ({
           extra_id: ext.extra.id,
           extra_name: ext.extra.name,

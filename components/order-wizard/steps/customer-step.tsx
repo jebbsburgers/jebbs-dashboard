@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Search, User, Plus } from "lucide-react";
+import { Search, User, Plus, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Customer } from "@/lib/types";
 import { CustomerAddressSelect } from "@/components/orders/customer-adress-select";
@@ -40,6 +40,9 @@ interface CustomerStepProps {
 
   // Edit Customer
   onEditCustomer: () => void;
+
+  // 🆕 Modo edit
+  mode?: "create" | "edit";
 }
 
 export function CustomerStep({
@@ -58,39 +61,80 @@ export function CustomerStep({
   onSelectAddress,
   isLoadingAddresses,
   onEditCustomer,
+  mode = "create", // 🆕
 }: CustomerStepProps) {
+  // 🆕 En modo edit, mostrar el cliente seleccionado arriba
+  const showSelectedCustomerCard = mode === "edit" && selectedCustomer;
+
   return (
     <div className="space-y-4">
-      {/* Toggle New/Existing */}
-      <div className="flex gap-2">
-        <Button
-          variant={!isNewCustomer ? "default" : "outline"}
-          className="flex-1"
-          onClick={() => onToggleNewCustomer(false)}
-        >
-          <User className="mr-2 h-4 w-4" />
-          Existente
-        </Button>
-        <Button
-          variant={isNewCustomer ? "default" : "outline"}
-          className="flex-1"
-          onClick={() => onToggleNewCustomer(true)}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo
-        </Button>
-      </div>
+      {/* 🆕 Cliente Seleccionado (solo en modo edit) */}
+      {showSelectedCustomerCard && (
+        <Card className="border-2 border-primary bg-primary/5">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <p className="font-medium">Cliente del Pedido</p>
+                </div>
+                <p className="text-sm font-semibold">{selectedCustomer.name}</p>
+                {selectedCustomer.phone && (
+                  <p className="text-sm text-muted-foreground">
+                    📞 {selectedCustomer.phone}
+                  </p>
+                )}
+              </div>
+              <Button size="sm" variant="outline" onClick={onEditCustomer}>
+                ✏️ Editar
+              </Button>
+            </div>
 
-      {/* Existing Customer */}
-      {!isNewCustomer ? (
+            {/* Dirección seleccionada */}
+            <div className="pt-2 border-t">
+              <CustomerAddressSelect
+                customerId={selectedCustomer.id}
+                value={selectedAddress}
+                onChange={onSelectAddress}
+                isLoading={isLoadingAddresses}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Toggle New/Existing (ocultar en modo edit) */}
+      {mode === "create" && (
+        <div className="flex gap-2">
+          <Button
+            variant={!isNewCustomer ? "default" : "outline"}
+            className="flex-1 bg-card"
+            onClick={() => onToggleNewCustomer(false)}
+          >
+            <User className="mr-2 h-4 w-4" />
+            Existente
+          </Button>
+          <Button
+            variant={isNewCustomer ? "default" : "outline"}
+            className="flex-1 bg-card"
+            onClick={() => onToggleNewCustomer(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo
+          </Button>
+        </div>
+      )}
+
+      {/* Existing Customer (solo en modo create) */}
+      {mode === "create" && !isNewCustomer ? (
         <div className="space-y-3">
-          <div className="relative">
+          <div className="relative bg-card">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por nombre, teléfono o dirección..."
               value={customerSearch}
               onChange={(e) => onCustomerSearchChange(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-card"
             />
           </div>
 
@@ -102,7 +146,7 @@ export function CustomerStep({
                 <Card
                   key={customer.id}
                   className={cn(
-                    "cursor-pointer transition-all hover:shadow-sm",
+                    "cursor-pointer transition-all hover:shadow-sm bg-card",
                     isSelected && "ring-2 ring-primary",
                   )}
                   onClick={() => onSelectCustomer(customer)}
@@ -150,10 +194,10 @@ export function CustomerStep({
             })}
           </div>
         </div>
-      ) : (
-        /* New Customer */
+      ) : mode === "create" && isNewCustomer ? (
+        /* New Customer (solo en modo create) */
         <div className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Nombre *</Label>
             <Input
               value={newCustomerData.name}
@@ -163,11 +207,12 @@ export function CustomerStep({
                   name: e.target.value,
                 })
               }
+              className="bg-card"
               placeholder="Ej: Jeremías"
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Teléfono</Label>
             <Input
               value={newCustomerData.phone}
@@ -177,13 +222,14 @@ export function CustomerStep({
                   phone: e.target.value,
                 })
               }
+              className="bg-card"
               placeholder="Ej: 221 123-456"
             />
           </div>
 
           <Separator />
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Nombre de la dirección</Label>
             <Input
               value={newAddressData.label}
@@ -193,11 +239,12 @@ export function CustomerStep({
                   label: e.target.value,
                 })
               }
+              className="bg-card"
               placeholder="Ej: Casa"
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Dirección</Label>
             <Input
               value={newAddressData.address}
@@ -207,11 +254,12 @@ export function CustomerStep({
                   address: e.target.value,
                 })
               }
+              className="bg-card"
               placeholder="Solo completar si es para envío a domicilio"
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Label>Notas de la dirección</Label>
             <Textarea
               value={newAddressData.notes}
@@ -227,6 +275,18 @@ export function CustomerStep({
             />
           </div>
         </div>
+      ) : null}
+
+      {/* 🆕 Mensaje informativo en modo edit */}
+      {mode === "edit" && (
+        <Card className="bg-muted/50">
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground text-center">
+              💡 Editando pedido existente. El cliente y la dirección ya están
+              configurados.
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

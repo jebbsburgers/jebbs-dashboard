@@ -17,6 +17,7 @@ interface OrderColumnProps {
   onViewDetails: (order: Order) => void;
   onEditOrder?: (order: Order) => void; // 🆕
   accentColor: string;
+  onChangeStatus?: (order: Order) => void;
 }
 
 export function OrderColumn({
@@ -26,6 +27,7 @@ export function OrderColumn({
   onViewDetails,
   onEditOrder, // 🆕
   accentColor,
+  onChangeStatus,
 }: OrderColumnProps) {
   const filteredOrders = orders.filter((order) => order.status === status);
 
@@ -72,6 +74,7 @@ export function OrderColumn({
                 order={order}
                 onViewDetails={onViewDetails}
                 onEditOrder={onEditOrder} // 🆕
+                onChangeStatus={onChangeStatus} // 👈
               />
             ))
           )}
