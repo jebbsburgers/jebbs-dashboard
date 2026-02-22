@@ -41,8 +41,12 @@ interface CustomerStepProps {
   // Edit Customer
   onEditCustomer: () => void;
 
-  // 🆕 Modo edit
+  // Modo edit
   mode?: "create" | "edit";
+
+  // Paginación
+  page: number;
+  totalPages: number;
 }
 
 export function CustomerStep({
@@ -61,16 +65,24 @@ export function CustomerStep({
   onSelectAddress,
   isLoadingAddresses,
   onEditCustomer,
-  mode = "create", // 🆕
+  mode = "create",
+  page,
+  totalPages,
 }: CustomerStepProps) {
-  // 🆕 En modo edit, mostrar el cliente seleccionado arriba
+  const CUSTOMERS_PER_PAGE = 5;
+
+  const paginatedCustomers = filteredCustomers.slice(
+    (page - 1) * CUSTOMERS_PER_PAGE,
+    page * CUSTOMERS_PER_PAGE,
+  );
+
   const showSelectedCustomerCard = mode === "edit" && selectedCustomer;
 
   return (
     <div className="space-y-4">
-      {/* 🆕 Cliente Seleccionado (solo en modo edit) */}
+      {/* Cliente Seleccionado (solo en modo edit) */}
       {showSelectedCustomerCard && (
-        <Card className="border-2 border-primary bg-primary/5">
+        <Card className="border-2 border-primary bg-card">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-start justify-between">
               <div className="space-y-1 flex-1">
@@ -90,7 +102,6 @@ export function CustomerStep({
               </Button>
             </div>
 
-            {/* Dirección seleccionada */}
             <div className="pt-2 border-t">
               <CustomerAddressSelect
                 customerId={selectedCustomer.id}
@@ -108,7 +119,7 @@ export function CustomerStep({
         <div className="flex gap-2">
           <Button
             variant={!isNewCustomer ? "default" : "outline"}
-            className="flex-1 bg-card"
+            className="flex-1"
             onClick={() => onToggleNewCustomer(false)}
           >
             <User className="mr-2 h-4 w-4" />
@@ -116,7 +127,7 @@ export function CustomerStep({
           </Button>
           <Button
             variant={isNewCustomer ? "default" : "outline"}
-            className="flex-1 bg-card"
+            className="flex-1"
             onClick={() => onToggleNewCustomer(true)}
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -139,7 +150,7 @@ export function CustomerStep({
           </div>
 
           <div className="space-y-4">
-            {filteredCustomers.slice(0, 10).map((customer) => {
+            {paginatedCustomers.map((customer) => {
               const isSelected = selectedCustomer?.id === customer.id;
 
               return (
@@ -277,7 +288,7 @@ export function CustomerStep({
         </div>
       ) : null}
 
-      {/* 🆕 Mensaje informativo en modo edit */}
+      {/* Mensaje informativo en modo edit */}
       {mode === "edit" && (
         <Card className="bg-muted/50">
           <CardContent className="p-4">

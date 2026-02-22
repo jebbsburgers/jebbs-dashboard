@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -15,10 +15,8 @@ import { useAllCombos } from "@/lib/hooks/use-combos";
 import { cn } from "@/lib/utils";
 import { EditCustomerModal } from "../orders/edit/edit-customer-modal";
 
-// 🆕 Importar hook orquestador
 import { useOrderWizard } from "./hooks/use-order-wizard";
 
-// 🆕 Importar componentes de steps
 import {
   CustomerStep,
   CombosStep,
@@ -30,20 +28,24 @@ import type { OrderWithItems } from "@/lib/types";
 interface OrderWizardDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode?: "create" | "edit"; // 🆕
-  orderToEdit?: OrderWithItems | null; // 🆕
+  mode?: "create" | "edit";
+  orderToEdit?: OrderWithItems | null;
 }
 
 type WizardStep = "customer" | "combos" | "burgers" | "summary";
 
+const CUSTOMERS_PER_PAGE = 5;
+
 export function OrderWizardDrawer({
   open,
   onOpenChange,
-  mode = "create", // 🆕
-  orderToEdit, // 🆕
+  mode = "create",
+  orderToEdit,
 }: OrderWizardDrawerProps) {
-  // ================= STEP NAVIGATION =================
   const [step, setStep] = useState<WizardStep>("customer");
+
+  // Paginación de clientes
+  const [customerPage, setCustomerPage] = useState(1);
 
   // ================= DATA LOADING =================
   const { data: customers } = useCustomers();
@@ -74,19 +76,15 @@ export function OrderWizardDrawer({
     );
   }, [extras]);
 
-  // ================= 🆕 HOOK ORQUESTADOR CON MODO EDIT =================
   const wizard = useOrderWizard({
     meatExtra,
     friesExtra,
-    mode, // 🆕
-    orderToEdit, // 🆕
-    allBurgers: burgers || [], // 🆕
-    allCombos: combos || [], // 🆕
-    allExtras: extras || [], // 🆕
+    mode,
+    orderToEdit,
+    allBurgers: burgers || [],
+    allCombos: combos || [],
+    allExtras: extras || [],
   });
-
-  console.log("🍟 friesExtra:", friesExtra);
-  console.log("🥩 meatExtra:", meatExtra);
 
   // ================= CUSTOMER ADDRESSES =================
   const { data: customerAddresses, isLoading: isLoadingAddresses } =
@@ -112,11 +110,21 @@ export function OrderWizardDrawer({
     );
   }, [customers, wizard.customer.customerSearch]);
 
+  // Reset página cuando cambia la búsqueda
+  useEffect(() => {
+    setCustomerPage(1);
+  }, [wizard.customer.customerSearch]);
+
+  const customerTotalPages = Math.ceil(
+    filteredCustomers.length / CUSTOMERS_PER_PAGE,
+  );
+
   // ================= HANDLERS =================
   const handleClose = (open: boolean) => {
     if (!open) {
       wizard.resetAll();
       setStep("customer");
+      setCustomerPage(1);
     }
     onOpenChange(open);
   };
@@ -150,14 +158,12 @@ export function OrderWizardDrawer({
         >
           {/* HEADER */}
           <SheetHeader className="border-b px-6 py-4">
-            {/* 🆕 TÍTULO DINÁMICO */}
             <SheetTitle className="text-lg">
               {mode === "edit"
                 ? `Editar Pedido #${orderToEdit?.order_number}`
                 : "Crear Pedido"}
             </SheetTitle>
 
-            {/* Progress Indicator */}
             <div className="flex items-center gap-2 pt-2">
               {steps.map((s, i) => (
                 <div key={s.key} className="flex items-center">
@@ -189,7 +195,6 @@ export function OrderWizardDrawer({
           {/* CONTENT */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-6">
-              {/* STEP 1: CUSTOMER */}
               {step === "customer" && (
                 <CustomerStep
                   customerSearch={wizard.customer.customerSearch}
@@ -207,10 +212,12 @@ export function OrderWizardDrawer({
                   onSelectAddress={wizard.customer.setSelectedAddress}
                   isLoadingAddresses={isLoadingAddresses}
                   onEditCustomer={handleEditCustomer}
+                  mode={mode}
+                  page={customerPage}
+                  totalPages={customerTotalPages}
                 />
               )}
 
-              {/* STEP 2: COMBOS */}
               {step === "combos" && (
                 <CombosStep
                   availableCombos={combos || []}
@@ -242,7 +249,6 @@ export function OrderWizardDrawer({
                 />
               )}
 
-              {/* STEP 3: BURGERS */}
               {step === "burgers" && (
                 <BurgersStep
                   availableBurgers={burgers || []}
@@ -263,7 +269,6 @@ export function OrderWizardDrawer({
                 />
               )}
 
-              {/* STEP 4: SUMMARY */}
               {step === "summary" && (
                 <SummaryStep
                   isNewCustomer={wizard.customer.isNewCustomer}
@@ -307,7 +312,7 @@ export function OrderWizardDrawer({
           {/* FOOTER */}
           <div className="shrink-0 flex items-center justify-between border-t px-6 py-4 z-10 bg-background">
             {/* Back Button */}
-            {step !== "customer" && (
+            {step !== "customer" ? (
               <Button
                 variant="outline"
                 onClick={() => {
@@ -320,8 +325,36 @@ export function OrderWizardDrawer({
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Atrás
               </Button>
+            ) : (
+              <div />
             )}
-            {step === "customer" && <div />}
+
+            {/* Paginación de clientes (centro) */}
+            {step === "customer" &&
+              !wizard.customer.isNewCustomer &&
+              customerTotalPages > 1 && (
+                <div className="ios-glass rounded-full px-4 py-2 flex items-center gap-2 bg-card">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={customerPage === 1}
+                    onClick={() => setCustomerPage((p) => p - 1)}
+                  >
+                    ←
+                  </Button>
+                  <span className="text-sm font-medium">
+                    {customerPage} / {customerTotalPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={customerPage === customerTotalPages}
+                    onClick={() => setCustomerPage((p) => p + 1)}
+                  >
+                    →
+                  </Button>
+                </div>
+              )}
 
             {/* Next/Submit Buttons */}
             {step === "customer" && (
@@ -359,7 +392,6 @@ export function OrderWizardDrawer({
                 onClick={handleSubmit}
                 disabled={!wizard.settings.deliveryType || wizard.isSubmitting}
               >
-                {/* 🆕 TEXTO DINÁMICO */}
                 {wizard.isSubmitting
                   ? mode === "edit"
                     ? "Guardando..."
@@ -373,7 +405,6 @@ export function OrderWizardDrawer({
         </SheetContent>
       </Sheet>
 
-      {/* Edit Customer Modal */}
       {wizard.customer.selectedCustomer && (
         <EditCustomerModal
           open={wizard.customer.isEditingCustomer}

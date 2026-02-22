@@ -190,7 +190,10 @@ export default function CombosPage() {
         </Button>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 ios-glass rounded-lg bg-card">
+      <div
+        className="flex-1 overflow-auto p-6 ios-gl
+      ass rounded-lg bg-card"
+      >
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (

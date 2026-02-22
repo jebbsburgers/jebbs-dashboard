@@ -24,7 +24,7 @@ export function CustomerAddressesEditor({
   selectedAddressId?: string;
   onSelect: (addr: any) => void;
 }) {
-  const createAddress = useCreateCustomerAddress(customerId);
+  const createAddress = useCreateCustomerAddress();
   const deleteAddress = useDeleteCustomerAddress(customerId);
   const setDefault = useSetDefaultAddress();
 
@@ -36,6 +36,7 @@ export function CustomerAddressesEditor({
 
     createAddress.mutate(
       {
+        customerId, // 👈 esto faltaba
         address: newAddress,
         label: "Nueva",
         is_default: addresses.length === 0,
@@ -44,7 +45,7 @@ export function CustomerAddressesEditor({
         onSuccess: (data: any) => {
           setIsAdding(false);
           setNewAddress("");
-          if (data?.id) onSelect(data); // 👈 se selecciona
+          if (data?.id) onSelect(data);
         },
       },
     );

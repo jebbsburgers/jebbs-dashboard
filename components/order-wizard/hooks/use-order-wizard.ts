@@ -140,6 +140,7 @@ export function useOrderWizard({
         allExtras,
         allBurgers,
         allCombos,
+        meatExtra, // 👈 agregar
       );
 
       // Cargar datos en cada módulo
@@ -236,6 +237,7 @@ export function useOrderWizard({
         discount_amount: discountAmount,
         items,
         notes: settings.notes || null, // 🆕 Convertir "" o undefined → null
+        delivery_time: settings.deliveryTime || null, // ✅ Agregar esto
       };
 
       console.log("=== PAYLOAD FINAL ===");

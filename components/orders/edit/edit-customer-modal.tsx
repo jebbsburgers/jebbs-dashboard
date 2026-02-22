@@ -38,20 +38,28 @@ export function EditCustomerModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg bg-card">
         <DialogHeader>
           <DialogTitle>Editar cliente</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <label className="text-sm">Nombre</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-card"
+            />
           </div>
 
-          <div>
+          <div className="space-y-2">
             <label className="text-sm">Teléfono</label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="bg-card"
+            />
           </div>
 
           <CustomerAddressesEditor

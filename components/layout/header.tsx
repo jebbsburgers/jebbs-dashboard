@@ -34,20 +34,6 @@ export function Header({
 
         <ThemeToggle />
 
-        {onRefresh && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="bg-card"
-          >
-            <RefreshCw
-              className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
-            />
-            Actualizar
-          </Button>
-        )}
         {onCreateOrder && (
           <Button onClick={onCreateOrder} size="sm">
             <Plus className="mr-2 h-4 w-4" />
@@ -55,6 +41,20 @@ export function Header({
           </Button>
         )}
       </div>
+      {/* {onRefresh && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          className="bg-card"
+        >
+          <RefreshCw
+            className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
+          />
+          Actualizar
+        </Button>
+      )} */}
     </header>
   );
 }

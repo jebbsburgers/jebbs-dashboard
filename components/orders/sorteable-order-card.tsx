@@ -40,6 +40,7 @@ export function SortableOrderCard({
           order={order}
           onViewDetails={onViewDetails}
           onEditOrder={onEditOrder} // 🆕
+          onChangeStatus={onChangeStatus}
         />
       </div>
 

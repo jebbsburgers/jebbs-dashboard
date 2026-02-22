@@ -20,14 +20,23 @@ interface SelectedCombo {
 export class OrderDataTransformer {
   static transformBurgersToOrderItems(
     burgers: SelectedBurger[],
+    friesExtra?: { price: number } | null,
   ): OrderItemInput[] {
     return burgers.map((item) => {
       const unitPrice = item.burger.base_price + item.meatPriceAdjustment;
 
-      // ✅ Siempre guardar customizations como JSON
+      const baseFries = item.burger.default_fries_quantity ?? 1;
+      const friesDiff = item.friesQuantity - baseFries;
+
+      let friesAdjustment = 0;
+      if (friesExtra) {
+        friesAdjustment = friesDiff * friesExtra.price * item.quantity;
+      }
+
       const customizationData = {
         meatCount: item.meatCount,
         friesQuantity: item.friesQuantity,
+        friesAdjustment, // 👈 agregar
         removedIngredients: item.removedIngredients,
         extras: item.selectedExtras.map((ext) => ({
           id: ext.extra.id,
@@ -43,7 +52,7 @@ export class OrderDataTransformer {
         burger_name: item.burger.name,
         quantity: item.quantity,
         unit_price: unitPrice,
-        subtotal: unitPrice * item.quantity,
+        subtotal: unitPrice * item.quantity + friesAdjustment, // ✅ sin extrasTotal
         customizations: JSON.stringify(customizationData),
         extras: item.selectedExtras.map((ext) => ({
           extra_id: ext.extra.id,
@@ -115,6 +124,11 @@ export class OrderDataTransformer {
               name: b.burger.name,
               meatCount: b.meatCount,
               friesQuantity: b.friesQuantity,
+              friesAdjustment: friesExtra // 👈 agregar
+                ? (b.friesQuantity - (b.burger.default_fries_quantity ?? 1)) *
+                  friesExtra.price *
+                  b.quantity
+                : 0,
               quantity: b.quantity,
               removedIngredients: b.removedIngredients,
               extras: b.selectedExtras.map((ext) => ({
@@ -150,7 +164,7 @@ export class OrderDataTransformer {
       meatExtra,
       friesExtra,
     );
-    const burgerItems = this.transformBurgersToOrderItems(burgers);
+    const burgerItems = this.transformBurgersToOrderItems(burgers, friesExtra);
 
     return [...comboItems, ...burgerItems];
   }

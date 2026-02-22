@@ -11,10 +11,11 @@ export function loadOrderIntoWizard(
   allExtras: Extra[],
   allBurgers: any[],
   allCombos: any[],
+  meatExtra?: { price: number } | null, // 👈 agregar
 ) {
   return {
     customerData: loadCustomerData(order),
-    burgers: loadBurgers(order, allBurgers, allExtras),
+    burgers: loadBurgers(order, allBurgers, allExtras, meatExtra), // 👈 pasar
     combos: loadCombos(order, allCombos, allBurgers, allExtras),
     settings: loadSettings(order),
   };
@@ -54,6 +55,7 @@ function loadBurgers(
   order: OrderWithItems,
   allBurgers: any[],
   allExtras: Extra[],
+  meatExtra?: { price: number } | null, // 👈 agregar
 ): SelectedBurger[] {
   const burgerItems = order.items.filter((item) => !item.combo_id);
 
@@ -93,6 +95,11 @@ function loadBurgers(
         };
       });
 
+      const meatCount =
+        customData?.meatCount || burger.default_meat_quantity || 2;
+      const meatDiff = meatCount - (burger.default_meat_quantity || 2);
+      const meatPriceAdjustment = meatExtra ? meatDiff * meatExtra.price : 0; // 👈
+
       return {
         id: nanoid(),
         burger,
@@ -102,7 +109,7 @@ function loadBurgers(
           customData?.friesQuantity ?? burger.default_fries_quantity ?? 1,
         removedIngredients: customData?.removedIngredients || [],
         selectedExtras,
-        meatPriceAdjustment: 0, // Se calculará en el hook
+        meatPriceAdjustment, // 👈 usar calculado
       };
     })
     .filter(Boolean) as SelectedBurger[];

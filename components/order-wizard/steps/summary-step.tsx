@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,7 +53,7 @@ interface SummaryStepProps {
     quantity: number;
     slots: Array<{
       slotId: string;
-      slotType: "burger" | "drink" | "side" | "nuggets"; // 🆕 Agregar
+      slotType: "burger" | "drink" | "side" | "nuggets";
       defaultMeatCount?: number;
       burgers: Array<{
         burger: {
@@ -72,7 +71,6 @@ interface SummaryStepProps {
         }>;
       }>;
       selectedExtra: {
-        // 🆕 Agregar
         id: string;
         name: string;
         price: number;
@@ -106,7 +104,7 @@ interface SummaryStepProps {
   notes: string;
   onNotesChange: (notes: string) => void;
 
-  // 🆕 Delivery Time
+  // Delivery Time
   deliveryTime?: string;
   onDeliveryTimeChange?: (time: string) => void;
 }
@@ -119,7 +117,6 @@ export function SummaryStep({
   newAddressData,
   selectedBurgers,
   selectedCombos,
-  extrasTotal,
   orderTotal,
   meatExtra,
   friesExtra,
@@ -129,7 +126,6 @@ export function SummaryStep({
   onDeliveryFeeChange,
   paymentMethod,
   onPaymentMethodChange,
-  subtotal,
   discountType,
   discountValue,
   discountAmount,
@@ -140,7 +136,6 @@ export function SummaryStep({
   onDeliveryTimeChange,
   deliveryTime,
 }: SummaryStepProps) {
-  // Validar si tiene dirección disponible
   const hasAddress = useMemo(() => {
     if (isNewCustomer) {
       return newAddressData?.address?.trim().length ?? 0 > 0;
@@ -154,7 +149,6 @@ export function SummaryStep({
       <Card className="bg-card">
         <CardContent className="p-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm space-y-2">
-            {/* Name */}
             <div className="font-medium flex items-center gap-2">
               <h3 className="flex items-center gap-2 text-sm font-medium">
                 <User className="h-4 w-4 text-muted-foreground" />
@@ -163,7 +157,6 @@ export function SummaryStep({
               {customerName}
             </div>
 
-            {/* Address */}
             {(newAddressData?.address || selectedAddress) && (
               <div className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
@@ -173,7 +166,6 @@ export function SummaryStep({
                       ? `${newAddressData?.label}: ${newAddressData?.address}`
                       : `${selectedAddress?.label}: ${selectedAddress?.address}`}
                   </p>
-
                   {(newAddressData?.notes || selectedAddress?.notes) && (
                     <p className="text-xs text-muted-foreground italic">
                       Nota:{" "}
@@ -186,7 +178,6 @@ export function SummaryStep({
               </div>
             )}
 
-            {/* Phone */}
             {customerPhone && (
               <div className="flex items-center gap-2">
                 <h3 className="flex items-center gap-2 text-sm font-medium">
@@ -200,11 +191,10 @@ export function SummaryStep({
         </CardContent>
       </Card>
 
-      {/* Payment Method - 🆕 CON RADIOGROUP */}
+      {/* Payment Method */}
       <Card className="bg-card">
         <CardContent className="p-4 space-y-3">
           <h3 className="text-sm font-medium">Método de pago</h3>
-
           <RadioGroup
             value={paymentMethod}
             onValueChange={(value: "cash" | "transfer") => {
@@ -217,7 +207,6 @@ export function SummaryStep({
                 💵 Efectivo
               </Label>
             </div>
-
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="transfer" id="transfer" />
               <Label htmlFor="transfer" className="font-normal cursor-pointer">
@@ -228,7 +217,7 @@ export function SummaryStep({
         </CardContent>
       </Card>
 
-      {/* Delivery - CON VALIDACIÓN */}
+      {/* Delivery */}
       <Card className="bg-card">
         <CardContent className="p-4 space-y-4">
           <h3 className="text-sm font-medium">Entrega</h3>
@@ -241,7 +230,6 @@ export function SummaryStep({
                 onDeliveryTypeChange(value);
               }}
             >
-              {/* Pickup - Siempre disponible */}
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="pickup" id="pickup" />
                 <Label htmlFor="pickup" className="font-normal cursor-pointer">
@@ -249,7 +237,6 @@ export function SummaryStep({
                 </Label>
               </div>
 
-              {/* Delivery - Condicional */}
               <div className="flex items-center justify-between space-x-2">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem
@@ -270,7 +257,6 @@ export function SummaryStep({
                   </Label>
                 </div>
 
-                {/* Tooltip explicativo */}
                 {!hasAddress && (
                   <TooltipProvider>
                     <Tooltip>
@@ -289,7 +275,6 @@ export function SummaryStep({
               </div>
             </RadioGroup>
 
-            {/* Mensaje de ayuda */}
             {!hasAddress && (
               <div className="flex items-start gap-2 rounded-md bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 p-3">
                 <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5" />
@@ -317,7 +302,6 @@ export function SummaryStep({
             </div>
           )}
 
-          {/* 🆕 Horario - PARA AMBOS (delivery y pickup) */}
           {onDeliveryTimeChange && (
             <div className="space-y-2">
               <Label htmlFor="deliveryTime" className="flex items-center gap-2">
@@ -345,7 +329,7 @@ export function SummaryStep({
         </CardContent>
       </Card>
 
-      {/* Discount - 🆕 CON RADIOGROUP */}
+      {/* Discount */}
       <Card className="bg-card">
         <CardContent className="p-4 space-y-4">
           <h3 className="text-sm font-medium">Descuento</h3>
@@ -356,7 +340,6 @@ export function SummaryStep({
               value={discountType}
               onValueChange={(value: "amount" | "percentage" | "none") => {
                 onDiscountTypeChange(value);
-                // Reset valor cuando cambia a "none"
                 if (value === "none") {
                   onDiscountValueChange(0);
                 }
@@ -371,7 +354,6 @@ export function SummaryStep({
                   Sin descuento
                 </Label>
               </div>
-
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="percentage" id="discount-percentage" />
                 <Label
@@ -381,7 +363,6 @@ export function SummaryStep({
                   💸 Porcentaje (%)
                 </Label>
               </div>
-
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="amount" id="discount-amount" />
                 <Label
@@ -393,7 +374,6 @@ export function SummaryStep({
               </div>
             </RadioGroup>
 
-            {/* Input de valor - Solo si no es "none" */}
             {discountType !== "none" && (
               <div className="space-y-2">
                 <Label>
@@ -415,8 +395,6 @@ export function SummaryStep({
                       : "Ej: 5000"
                   }
                 />
-
-                {/* Preview del descuento */}
                 {discountAmount > 0 && (
                   <div className="flex items-center justify-between text-sm rounded-md bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-2">
                     <span className="text-green-900 dark:text-green-100">
@@ -444,51 +422,34 @@ export function SummaryStep({
               const baseMeat = item.burger.default_meat_quantity;
               const diffMeat = item.meatCount - baseMeat;
 
-              // 🆕 Calcular sizeLabel
-              // 🆕 Calcular sizeLabel mejorado (hasta Quíntuple)
               const sizeLabel =
-                item.meatCount === baseMeat
-                  ? // Tamaño base
-                    baseMeat === 1
-                    ? "Simple"
-                    : baseMeat === 2
-                      ? "Doble"
-                      : baseMeat === 3
-                        ? "Triple"
-                        : baseMeat === 4
-                          ? "Cuádruple"
-                          : baseMeat === 5
-                            ? "Quíntuple"
-                            : `${baseMeat} carnes`
-                  : // Tamaño modificado
-                    item.meatCount === 1
-                    ? "Simple"
-                    : item.meatCount === 2
-                      ? "Doble"
-                      : item.meatCount === 3
-                        ? "Triple"
-                        : item.meatCount === 4
-                          ? "Cuádruple"
-                          : item.meatCount === 5
-                            ? "Quíntuple"
-                            : `${item.meatCount} carnes`;
+                item.meatCount === 1
+                  ? "Simple"
+                  : item.meatCount === 2
+                    ? "Doble"
+                    : item.meatCount === 3
+                      ? "Triple"
+                      : item.meatCount === 4
+                        ? "Cuádruple"
+                        : item.meatCount === 5
+                          ? "Quíntuple"
+                          : `${item.meatCount} carnes`;
 
               const baseFries = item.burger.default_fries_quantity ?? 1;
               const diffFries = item.friesQuantity - baseFries;
 
-              // 🆕 Calcular precio base y extras
               const basePrice = item.burger.base_price * item.quantity;
 
               let extrasPrice = 0;
 
+              // ✅ FIX: papas sin if (diffFries > 0), permite valores negativos (sin papas)
+              if (friesExtra) {
+                extrasPrice += diffFries * friesExtra.price * item.quantity;
+              }
+
               // Medallones extra
               if (diffMeat > 0 && meatExtra) {
                 extrasPrice += diffMeat * meatExtra.price * item.quantity;
-              }
-
-              // Papas extra
-              if (diffFries > 0 && friesExtra) {
-                extrasPrice += diffFries * friesExtra.price * item.quantity;
               }
 
               // Otros extras
@@ -502,7 +463,6 @@ export function SummaryStep({
                 <div key={item.id} className="border-b pb-3 last:border-0">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      {/* Nombre */}
                       <p className="font-medium">
                         {item.quantity}x {item.burger.name}{" "}
                         <span className="text-xs text-muted-foreground">
@@ -510,12 +470,10 @@ export function SummaryStep({
                         </span>
                       </p>
 
-                      {/* 🆕 PRECIO BASE */}
                       <p className="text-xs text-muted-foreground mt-1">
                         Base: {formatCurrency(basePrice)}
                       </p>
 
-                      {/* 🆕 DESGLOSE DE EXTRAS */}
                       <div className="mt-2 space-y-1">
                         {/* Ingredientes removidos */}
                         {item.removedIngredients.length > 0 && (
@@ -524,19 +482,25 @@ export function SummaryStep({
                           </p>
                         )}
 
-                        {/* Papas */}
+                        {/* ✅ FIX: Papas — muestra descuento si diffFries < 0 */}
                         <p className="text-xs text-muted-foreground">
                           •{" "}
                           {item.friesQuantity === 0
                             ? "Sin papas"
                             : `${item.friesQuantity} ${item.friesQuantity === 1 ? "porción" : "porciones"} de papas`}
-                          {diffFries > 0 && friesExtra && (
-                            <span className="text-primary font-medium">
-                              {" "}
-                              +
-                              {formatCurrency(
-                                diffFries * friesExtra.price * item.quantity,
+                          {friesExtra && diffFries !== 0 && (
+                            <span
+                              className={cn(
+                                "font-medium",
+                                diffFries < 0
+                                  ? "text-green-600 dark:text-green-400"
+                                  : "text-primary",
                               )}
+                            >
+                              {" "}
+                              {diffFries < 0
+                                ? `-${formatCurrency(Math.abs(diffFries) * friesExtra.price * item.quantity)}`
+                                : `+${formatCurrency(diffFries * friesExtra.price * item.quantity)}`}
                             </span>
                           )}
                         </p>
@@ -569,7 +533,6 @@ export function SummaryStep({
                       </div>
                     </div>
 
-                    {/* 🆕 TOTAL DEL ITEM */}
                     <div className="flex flex-col items-end ml-4">
                       <span className="font-semibold">
                         {formatCurrency(basePrice + extrasPrice)}
@@ -585,7 +548,6 @@ export function SummaryStep({
 
           {/* Combos */}
           {selectedCombos.map((c) => {
-            // 🆕 Calcular precio base del combo y extras
             const comboBasePrice = c.combo.price * c.quantity;
 
             let comboExtrasPrice = 0;
@@ -597,7 +559,6 @@ export function SummaryStep({
                   0,
                 );
 
-                // Medallones
                 let meatAdjustment = 0;
                 if (meatExtra) {
                   const referenceMeatCount =
@@ -607,7 +568,7 @@ export function SummaryStep({
                   meatAdjustment = meatDiff * meatExtra.price;
                 }
 
-                // Papas
+                // ✅ FIX: también aplica en combos (sin if > 0)
                 let friesAdjustment = 0;
                 if (friesExtra) {
                   const referenceFriesCount =
@@ -624,26 +585,20 @@ export function SummaryStep({
 
             return (
               <div key={c.id} className="border-b pb-3 last:border-0">
-                {/* Header del combo */}
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <p className="font-medium">
                       {c.quantity}x {c.combo.name}
                     </p>
-
-                    {/* 🆕 PRECIO BASE DEL COMBO */}
                     <p className="text-xs text-muted-foreground mt-1">
                       Base: {formatCurrency(comboBasePrice)}
                     </p>
                   </div>
-
-                  {/* 🆕 TOTAL DEL COMBO */}
                   <span className="font-semibold ml-4">
                     {formatCurrency(comboBasePrice + comboExtrasPrice)}
                   </span>
                 </div>
 
-                {/* 🆕 DESGLOSE DE SLOTS Y BURGERS */}
                 <div className="mt-2 space-y-2">
                   {c.slots.map((slot) => (
                     <div key={slot.slotId}>
@@ -657,7 +612,6 @@ export function SummaryStep({
                           b.burger.default_fries_quantity ?? 1;
                         const friesDiff = b.friesQuantity - referenceFriesCount;
 
-                        // 🆕 Calcular sizeLabel para combos
                         const comboSizeLabel =
                           b.meatCount === 1
                             ? "Simple"
@@ -673,7 +627,6 @@ export function SummaryStep({
 
                         return (
                           <div key={burgerIndex} className="ml-4 space-y-1">
-                            {/* Nombre de la burger en el combo */}
                             <p className="text-sm font-medium text-muted-foreground">
                               • {b.quantity}x {b.burger.name}{" "}
                               <span className="text-xs">
@@ -682,31 +635,35 @@ export function SummaryStep({
                             </p>
 
                             <div className="ml-4 space-y-0.5">
-                              {/* Ingredientes removidos */}
                               {b.removedIngredients.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
                                   • Sin: {b.removedIngredients.join(", ")}
                                 </p>
                               )}
 
-                              {/* Papas */}
+                              {/* ✅ FIX: Papas en combos con descuento */}
                               <p className="text-xs text-muted-foreground">
                                 •{" "}
                                 {b.friesQuantity === 0
                                   ? "Sin papas"
                                   : `${b.friesQuantity} ${b.friesQuantity === 1 ? "porción" : "porciones"} de papas`}
-                                {friesDiff > 0 && friesExtra && (
-                                  <span className="text-primary font-medium">
-                                    {" "}
-                                    +
-                                    {formatCurrency(
-                                      friesDiff * friesExtra.price * b.quantity,
+                                {friesExtra && friesDiff !== 0 && (
+                                  <span
+                                    className={cn(
+                                      "font-medium",
+                                      friesDiff < 0
+                                        ? "text-green-600 dark:text-green-400"
+                                        : "text-primary",
                                     )}
+                                  >
+                                    {" "}
+                                    {friesDiff < 0
+                                      ? `-${formatCurrency(Math.abs(friesDiff) * friesExtra.price * b.quantity)}`
+                                      : `+${formatCurrency(friesDiff * friesExtra.price * b.quantity)}`}
                                   </span>
                                 )}
                               </p>
 
-                              {/* Medallones extra */}
                               {meatDiff > 0 && meatExtra && (
                                 <p className="text-xs text-muted-foreground">
                                   • + {meatDiff}x Medallón extra{" "}
@@ -719,7 +676,6 @@ export function SummaryStep({
                                 </p>
                               )}
 
-                              {/* Otros extras de la burger */}
                               {b.selectedExtras.map((ext) => (
                                 <p
                                   key={ext.extra.id}
@@ -739,7 +695,6 @@ export function SummaryStep({
                         );
                       })}
 
-                      {/* 🆕 BEBIDA O NUGGETS SELECCIONADOS */}
                       {slot.selectedExtra && (
                         <div className="ml-4">
                           <p className="text-sm font-medium text-muted-foreground">
@@ -757,7 +712,6 @@ export function SummaryStep({
 
           {/* Totals */}
           <div className="space-y-1 text-sm">
-            {/* Descuento */}
             {discountAmount > 0 && (
               <div className="flex justify-between text-green-600 dark:text-green-400">
                 <span>

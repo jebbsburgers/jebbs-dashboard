@@ -4,7 +4,7 @@ import type React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Eye, Edit, User, DollarSign } from "lucide-react"; // 🆕 Importar Edit
+import { Clock, Eye, Edit, User, DollarSign, ArrowRight } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
 import { useTogglePaymentStatus } from "@/lib/hooks/orders/use-orders";
@@ -20,19 +20,20 @@ const statusConfig = {
 interface OrderCardMobileProps {
   order: Order;
   onViewDetails: (order: Order) => void;
-  onEditOrder?: (order: Order) => void; // 🆕
+  onEditOrder?: (order: Order) => void;
+  onChangeStatus?: (order: Order) => void; // 🆕
 }
 
 export function OrderCardMobile({
   order,
   onViewDetails,
-  onEditOrder, // 🆕
+  onEditOrder,
+  onChangeStatus, // 🆕
 }: OrderCardMobileProps) {
   const togglePayment = useTogglePaymentStatus();
   const status = order.status;
   const config = statusConfig[status];
 
-  // 🆕 Verificar si se puede editar
   const canEdit = order.status === "new" || order.status === "ready";
 
   const handlePaymentToggle = (e: React.MouseEvent) => {
@@ -86,7 +87,8 @@ export function OrderCardMobile({
           </div>
         </div>
 
-        {/* 🆕 BOTONES (Ver detalles + Editar) */}
+        {/* BOTONES */}
+        {/* BOTONES */}
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -98,7 +100,6 @@ export function OrderCardMobile({
             Ver detalles
           </Button>
 
-          {/* 🆕 Botón EDITAR (solo si canEdit) */}
           {canEdit && onEditOrder && (
             <Button
               size="sm"
@@ -111,6 +112,25 @@ export function OrderCardMobile({
             </Button>
           )}
         </div>
+
+        {/* 🆕 Cambiar estado - línea separada */}
+        {onChangeStatus &&
+          (order.status === "new" || order.status === "ready") && (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                className="bg-card"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChangeStatus(order);
+                }}
+              >
+                <ArrowRight className="mr-2 h-4 w-4" />
+                {order.status === "new" ? "Listo" : "Completar"}
+              </Button>
+            </div>
+          )}
       </CardContent>
     </Card>
   );
