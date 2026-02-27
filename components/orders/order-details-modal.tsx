@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, Home, MapPin, User, Edit, Clock } from "lucide-react"; // 🆕 Importar Edit
+import { Car, Home, MapPin, User, Edit, Clock } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { useOrderWithItems } from "@/lib/hooks/orders/use-orders";
 import { formatCurrency } from "@/lib/utils/format";
@@ -20,10 +20,9 @@ interface OrderDetailsModalProps {
   order: Order | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEditOrder?: (order: Order) => void; // 🆕
+  onEditOrder?: (order: Order) => void;
 }
 
-// 🆕 Interfaces para customizations
 interface BurgerCustomization {
   burgerId: string;
   name: string;
@@ -67,14 +66,13 @@ export function OrderDetailsModal({
   order,
   open,
   onOpenChange,
-  onEditOrder, // 🆕
+  onEditOrder,
 }: OrderDetailsModalProps) {
   const { data: orderWithItems, isLoading } = useOrderWithItems(
     order?.id ?? null,
   );
   const config = order ? orderStatusConfig[order.status] : null;
 
-  // 🆕 Verificar si se puede editar (solo new y ready)
   const canEdit = order && (order.status === "new" || order.status === "ready");
 
   console.log(order, "order");
@@ -117,6 +115,22 @@ export function OrderDetailsModal({
           </div>
         ) : orderWithItems ? (
           <div className="space-y-4">
+
+            {/* Horario — arriba del cliente, abajo del número de pedido */}
+            {orderWithItems.delivery_time && (
+              <div className="flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-3 py-2 rounded-md">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {orderWithItems.delivery_type === "delivery"
+                    ? "🚚 Entregar a las:"
+                    : "🏪 Retirar a las:"}{" "}
+                  <span className="font-bold">
+                    {orderWithItems.delivery_time}
+                  </span>
+                </span>
+              </div>
+            )}
+
             {/* Cliente Info */}
             <div className="rounded-lg bg-secondary/50 p-4 space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium">
@@ -124,7 +138,6 @@ export function OrderDetailsModal({
                 {orderWithItems.customer_name}
               </div>
 
-              {/* 🆕 Dirección */}
               {orderWithItems.customer_address && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <MapPin className="h-4 w-4" />
@@ -135,7 +148,6 @@ export function OrderDetailsModal({
                 </div>
               )}
 
-              {/* 🆕 Tipo de entrega con iconos */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {orderWithItems.delivery_type === "delivery" ? (
                   <>
@@ -150,22 +162,6 @@ export function OrderDetailsModal({
                 )}
               </div>
 
-              {/* 🆕 Horario de Entrega/Retiro */}
-              {orderWithItems.delivery_time && (
-                <div className="flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-3 py-2 rounded-md">
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    {orderWithItems.delivery_type === "delivery"
-                      ? "🚚 Entregar a las:"
-                      : "🏪 Retirar a las:"}{" "}
-                    <span className="font-bold">
-                      {orderWithItems.delivery_time}
-                    </span>
-                  </span>
-                </div>
-              )}
-
-              {/* 🆕 Método de pago con iconos */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>
                   {orderWithItems.payment_method === "cash"
@@ -201,7 +197,6 @@ export function OrderDetailsModal({
                       key={item.id}
                       className="rounded-lg bg-secondary/30 p-4"
                     >
-                      {/* Header del item */}
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <p className="font-semibold text-base">
@@ -213,7 +208,7 @@ export function OrderDetailsModal({
                         </p>
                       </div>
 
-                      {/* COMBO: Mostrar slots y burgers */}
+                      {/* COMBO */}
                       {isCombo && customizations ? (
                         <div className="space-y-3 mt-3">
                           {customizations.map((slot, slotIndex) => {
@@ -238,13 +233,12 @@ export function OrderDetailsModal({
                                         </p>
                                       )}
 
-                                      {/* 🍟 PAPAS */}
                                       {burger.friesQuantity === 0 && (
-                                        <p>•🍟 Sin papas</p>
+                                        <p>• 🍟 Sin papas</p>
                                       )}
 
                                       {burger.friesQuantity > 0 && (
-                                        <p>•🍟 {burger.friesQuantity}x Papas</p>
+                                        <p>• 🍟 {burger.friesQuantity}x Papas</p>
                                       )}
 
                                       {burger.removedIngredients.length > 0 && (
@@ -264,8 +258,7 @@ export function OrderDetailsModal({
                                                 <span className="font-medium">
                                                   (
                                                   {formatCurrency(
-                                                    extra.price *
-                                                      extra.quantity,
+                                                    extra.price * extra.quantity,
                                                   )}
                                                   )
                                                 </span>
@@ -278,7 +271,6 @@ export function OrderDetailsModal({
                                   </div>
                                 ))}
 
-                                {/* 🆕 BEBIDAS Y NUGGETS */}
                                 {slot.selectedExtra &&
                                   slot.slotType in slotMetaMap &&
                                   (() => {
@@ -349,8 +341,7 @@ export function OrderDetailsModal({
                                     </p>
                                   )}
 
-                                  {singleData.removedIngredients?.length >
-                                    0 && (
+                                  {singleData.removedIngredients?.length > 0 && (
                                     <p>
                                       • Sin:{" "}
                                       {singleData.removedIngredients.join(", ")}
@@ -375,7 +366,7 @@ export function OrderDetailsModal({
                         </>
                       )}
 
-                      {/* Extras del item (fuera del combo) */}
+                      {/* Extras del item */}
                       {item.extras && item.extras.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-border/50 space-y-1">
                           {item.extras.map((extra) => (

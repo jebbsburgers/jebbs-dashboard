@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 export interface OrderItemInput {
   burger_id: string | null;
   combo_id?: string | null;
+  extra_id?: string | null; // 🆕 sides
   burger_name: string;
   quantity: number;
   unit_price: number;
@@ -23,21 +24,16 @@ export interface OrderItemInput {
 export interface CreateOrderInput {
   customer_id: string | null;
   customer_name: string;
-
   customer_address_id?: string | null;
-
   delivery_type: "delivery" | "pickup";
   delivery_fee: number;
   payment_method: "cash" | "transfer";
-
-  // 🆕 Descuentos
   discount_type?: "amount" | "percentage" | "none" | null;
   discount_value?: number;
   discount_amount?: number;
-
   items: OrderItemInput[];
   notes: string | null;
-
+  delivery_time?: string | null;
   save_customer?: boolean;
   new_customer?: {
     name: string;
@@ -65,7 +61,6 @@ export function useCreateOrder() {
         return acc + item.subtotal + extrasTotal;
       }, 0);
 
-      // 🆕 Calcular total con descuento
       const discountAmount = input.discount_amount ?? 0;
       const total = itemsTotal - discountAmount + input.delivery_fee;
 
@@ -78,11 +73,12 @@ export function useCreateOrder() {
           delivery_type: input.delivery_type,
           delivery_fee: input.delivery_fee,
           payment_method: input.payment_method,
-          discount_type: input.discount_type ?? "none", // 🆕
-          discount_value: input.discount_value ?? 0, // 🆕
-          discount_amount: discountAmount, // 🆕
+          discount_type: input.discount_type ?? "none",
+          discount_value: input.discount_value ?? 0,
+          discount_amount: discountAmount,
           total_amount: total,
           notes: input.notes,
+          delivery_time: input.delivery_time ?? null,
           status: "new",
         })
         .select()
@@ -91,22 +87,18 @@ export function useCreateOrder() {
       if (error) throw error;
 
       for (const item of input.items) {
-        console.log(
-          `💾 ${item.burger_name} customizations:`,
-          item.customizations,
-        );
-
         const { data: orderItem, error: itemError } = await supabase
           .from("order_items")
           .insert({
             order_id: order.id,
             burger_id: item.burger_id,
             combo_id: item.combo_id ?? null,
+            extra_id: item.extra_id ?? null, // 🆕
             burger_name: item.burger_name,
             quantity: item.quantity,
             unit_price: item.unit_price,
             subtotal: item.subtotal,
-            customizations: item.customizations,
+            customizations: item.customizations ?? null,
           })
           .select()
           .single();

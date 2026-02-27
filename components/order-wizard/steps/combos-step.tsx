@@ -2,18 +2,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
+import { cn } from "@/lib/utils";
 import type { Burger, Extra } from "@/lib/types";
 import { SelectedBurgerCard } from "@/components/orders/burger-item-card";
 import { ExtraSelector } from "../components/extra-selector";
 import { ComboSnapshot, ComboWithSlots } from "@/lib/types/combo-types";
 
 interface CombosStepProps {
-  // Available Combos
   availableCombos: ComboWithSlots[];
   onAddCombo: (combo: ComboWithSlots) => void;
   onRemoveCombo: (comboId: string) => void;
 
-  // Selected Combos
   selectedCombos: Array<{
     id: string;
     combo: ComboWithSlots | ComboSnapshot;
@@ -33,78 +32,29 @@ interface CombosStepProps {
         removedIngredients: string[];
         selectedExtras: { extra: Extra; quantity: number }[];
       }>;
-      selectedExtra: Extra | null; // 🆕
+      selectedExtra: Extra | null;
     }>;
   }>;
 
-  // Burgers for Selection
   availableBurgers: Burger[];
 
-  // Helpers
   getRemainingQuantity: (comboId: string, slotId: string) => number;
-  canAddBurgerToSlot: (
-    comboId: string,
-    slotId: string,
-    burger: Burger,
-  ) => boolean;
+  canAddBurgerToSlot: (comboId: string, slotId: string, burger: Burger) => boolean;
 
-  // Actions - Burgers
   onAddBurgerToSlot: (comboId: string, slotId: string, burger: Burger) => void;
-  onRemoveBurgerFromSlot: (
-    comboId: string,
-    slotId: string,
-    burgerItemId: string,
-  ) => void;
-  onIncreaseBurgerQty: (
-    comboId: string,
-    slotId: string,
-    burgerItemId: string,
-  ) => void;
-  onDecreaseBurgerQty: (
-    comboId: string,
-    slotId: string,
-    burgerItemId: string,
-  ) => void;
-  onUpdateBurgerMeat: (
-    comboId: string,
-    slotId: string,
-    burgerItemId: string,
-    meatCount: number,
-  ) => void;
-  onUpdateBurgerFries: (
-    comboId: string,
-    slotId: string,
-    burgerItemId: string,
-    delta: number,
-  ) => void;
-  onToggleBurgerIngredient: (
-    comboId: string,
-    slotId: string,
-    burgerItemId: string,
-    ingredient: string,
-  ) => void;
-  onToggleBurgerExtra: (
-    comboId: string,
-    slotId: string,
-    burgerItemId: string,
-    extra: Extra,
-  ) => void;
-  onUpdateBurgerExtraQty: (
-    comboId: string,
-    slotId: string,
-    burgerItemId: string,
-    extraId: string,
-    delta: number,
-  ) => void;
-
-  // 🆕 Actions - Extras for slots
+  onRemoveBurgerFromSlot: (comboId: string, slotId: string, burgerItemId: string) => void;
+  onIncreaseBurgerQty: (comboId: string, slotId: string, burgerItemId: string) => void;
+  onDecreaseBurgerQty: (comboId: string, slotId: string, burgerItemId: string) => void;
+  onUpdateBurgerMeat: (comboId: string, slotId: string, burgerItemId: string, meatCount: number) => void;
+  onUpdateBurgerFries: (comboId: string, slotId: string, burgerItemId: string, delta: number) => void;
+  onToggleBurgerIngredient: (comboId: string, slotId: string, burgerItemId: string, ingredient: string) => void;
+  onToggleBurgerExtra: (comboId: string, slotId: string, burgerItemId: string, extra: Extra) => void;
+  onUpdateBurgerExtraQty: (comboId: string, slotId: string, burgerItemId: string, extraId: string, delta: number) => void;
   onSelectExtraForSlot: (comboId: string, slotId: string, extra: Extra) => void;
 
-  // UI State
   expandedBurgerId: string | null;
   onToggleBurgerExpanded: (burgerItemId: string) => void;
 
-  // Extras
   meatExtra?: { price: number } | null;
   friesExtra?: { price: number } | null;
   extrasByCategory: Record<string, Extra[]>;
@@ -127,13 +77,18 @@ export function CombosStep({
   onToggleBurgerIngredient,
   onToggleBurgerExtra,
   onUpdateBurgerExtraQty,
-  onSelectExtraForSlot, // 🆕
+  onSelectExtraForSlot,
   expandedBurgerId,
   onToggleBurgerExpanded,
   meatExtra,
   friesExtra,
   extrasByCategory,
 }: CombosStepProps) {
+  // IDs de combos que ya fueron seleccionados al menos una vez
+  const selectedComboIds = new Set(
+    selectedCombos.map((c) => c.combo.id),
+  );
+
   return (
     <div className="space-y-6">
       {/* Available Combos */}
@@ -145,27 +100,34 @@ export function CombosStep({
         <div className="grid grid-cols-2 gap-3">
           {availableCombos
             .filter((c) => c.is_available)
-            .map((combo) => (
-              <Card
-                key={combo.id}
-                className="cursor-pointer hover:shadow-sm bg-card"
-                onClick={() => onAddCombo(combo)}
-              >
-                <CardContent className="p-3">
-                  <p className="font-medium">{combo.name}</p>
-                  <p className="text-sm font-semibold text-primary">
-                    {formatCurrency(combo.price)}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+            .map((combo) => {
+              const isSelected = selectedComboIds.has(combo.id);
+              return (
+                <Card
+                  key={combo.id}
+                  className={cn(
+                    "cursor-pointer transition-all bg-card",
+                    isSelected
+                      ? "ring-2 ring-primary border-primary"
+                      : "hover:shadow-sm",
+                  )}
+                  onClick={() => onAddCombo(combo)}
+                >
+                  <CardContent className="p-3">
+                    <p className="font-medium">{combo.name}</p>
+                    <p className="text-sm font-semibold text-primary">
+                      {formatCurrency(combo.price)}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
         </div>
       </div>
 
       {/* Selected Combos */}
       {selectedCombos.map((comboInstance) => (
         <div key={comboInstance.id} className="space-y-3">
-          {/* Header del combo con botón eliminar */}
           <div className="flex items-center justify-between px-1">
             <h4 className="font-medium text-sm">{comboInstance.combo.name}</h4>
             <Button
@@ -173,21 +135,14 @@ export function CombosStep({
               size="icon"
               className="h-7 w-7 text-destructive hover:bg-destructive/10"
               onClick={() => onRemoveCombo(comboInstance.id)}
-              title="Eliminar combo"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Renderizar cada slot según su tipo */}
           {comboInstance.slots.map((slot) => {
-            console.log(`🔍 Slot ID: ${slot.slotId}, Type: ${slot.slotType}`);
-            // 🍔 BURGER SLOT
             if (slot.slotType === "burger") {
-              const remaining = getRemainingQuantity(
-                comboInstance.id,
-                slot.slotId,
-              );
+              const remaining = getRemainingQuantity(comboInstance.id, slot.slotId);
 
               return (
                 <Card key={slot.slotId}>
@@ -196,7 +151,6 @@ export function CombosStep({
                       Hamburguesas ({remaining} disponibles)
                     </h5>
 
-                    {/* Selected Burgers */}
                     <div className="space-y-2">
                       {slot.burgers.map((item) => (
                         <SelectedBurgerCard
@@ -211,92 +165,43 @@ export function CombosStep({
                           onToggleExpand={() => onToggleBurgerExpanded(item.id)}
                           onUpdateQuantity={(d) =>
                             d > 0
-                              ? onIncreaseBurgerQty(
-                                  comboInstance.id,
-                                  slot.slotId,
-                                  item.id,
-                                )
-                              : onDecreaseBurgerQty(
-                                  comboInstance.id,
-                                  slot.slotId,
-                                  item.id,
-                                )
+                              ? onIncreaseBurgerQty(comboInstance.id, slot.slotId, item.id)
+                              : onDecreaseBurgerQty(comboInstance.id, slot.slotId, item.id)
                           }
                           onUpdateMeatCount={(d) => {
                             const min = slot.defaultMeatCount ?? 1;
                             const newCount = item.meatCount + d;
-
                             if (newCount < min) return;
-
-                            onUpdateBurgerMeat(
-                              comboInstance.id,
-                              slot.slotId,
-                              item.id,
-                              newCount,
-                            );
+                            onUpdateBurgerMeat(comboInstance.id, slot.slotId, item.id, newCount);
                           }}
                           onUpdateFriesCount={(d) =>
-                            onUpdateBurgerFries(
-                              comboInstance.id,
-                              slot.slotId,
-                              item.id,
-                              d,
-                            )
+                            onUpdateBurgerFries(comboInstance.id, slot.slotId, item.id, d)
                           }
                           onToggleIngredient={(ingredient) =>
-                            onToggleBurgerIngredient(
-                              comboInstance.id,
-                              slot.slotId,
-                              item.id,
-                              ingredient,
-                            )
+                            onToggleBurgerIngredient(comboInstance.id, slot.slotId, item.id, ingredient)
                           }
                           onToggleExtra={(extra) =>
-                            onToggleBurgerExtra(
-                              comboInstance.id,
-                              slot.slotId,
-                              item.id,
-                              extra,
-                            )
+                            onToggleBurgerExtra(comboInstance.id, slot.slotId, item.id, extra)
                           }
                           onUpdateExtraQuantity={(extraId, d) =>
-                            onUpdateBurgerExtraQty(
-                              comboInstance.id,
-                              slot.slotId,
-                              item.id,
-                              extraId,
-                              d,
-                            )
+                            onUpdateBurgerExtraQty(comboInstance.id, slot.slotId, item.id, extraId, d)
                           }
                           onRemove={() =>
-                            onRemoveBurgerFromSlot(
-                              comboInstance.id,
-                              slot.slotId,
-                              item.id,
-                            )
+                            onRemoveBurgerFromSlot(comboInstance.id, slot.slotId, item.id)
                           }
                         />
                       ))}
                     </div>
 
-                    {/* Add Burger Selector */}
                     {remaining > 0 && (
                       <div className="grid grid-cols-2 gap-2">
                         {availableBurgers?.map((burger) =>
-                          canAddBurgerToSlot(
-                            comboInstance.id,
-                            slot.slotId,
-                            burger,
-                          ) ? (
+                          canAddBurgerToSlot(comboInstance.id, slot.slotId, burger) ? (
                             <Card
                               key={burger.id}
                               className="cursor-pointer hover:shadow-sm"
                               onClick={() =>
-                                onAddBurgerToSlot(
-                                  comboInstance.id,
-                                  slot.slotId,
-                                  burger,
-                                )
+                                onAddBurgerToSlot(comboInstance.id, slot.slotId, burger)
                               }
                             >
                               <CardContent className="p-3">
@@ -315,10 +220,8 @@ export function CombosStep({
               );
             }
 
-            // 🥤 DRINK SLOT
             if (slot.slotType === "drink") {
               const drinkExtras = extrasByCategory["drink"] || [];
-
               return (
                 <Card key={slot.slotId}>
                   <CardContent className="p-4">
@@ -327,11 +230,7 @@ export function CombosStep({
                       extras={drinkExtras}
                       selectedExtraId={slot.selectedExtra?.id}
                       onSelect={(extra) =>
-                        onSelectExtraForSlot(
-                          comboInstance.id,
-                          slot.slotId,
-                          extra,
-                        )
+                        onSelectExtraForSlot(comboInstance.id, slot.slotId, extra)
                       }
                       required={slot.minQuantity > 0}
                     />
@@ -340,18 +239,8 @@ export function CombosStep({
               );
             }
 
-            // 🍟 SIDE SLOT (nuggets)
             if (slot.slotType === "side") {
               const sideExtras = extrasByCategory["sides"] || [];
-
-              console.log("🔍 SIDE SLOT DETECTADO");
-              console.log("📦 extrasByCategory completo:", extrasByCategory);
-              console.log(
-                "🍗 sides específicamente:",
-                extrasByCategory["sides"],
-              );
-
-              console.log("✅ sideExtras después del filtro:", sideExtras);
               return (
                 <Card key={slot.slotId}>
                   <CardContent className="p-4">
@@ -360,11 +249,7 @@ export function CombosStep({
                       extras={sideExtras}
                       selectedExtraId={slot.selectedExtra?.id}
                       onSelect={(extra) =>
-                        onSelectExtraForSlot(
-                          comboInstance.id,
-                          slot.slotId,
-                          extra,
-                        )
+                        onSelectExtraForSlot(comboInstance.id, slot.slotId, extra)
                       }
                       required={slot.minQuantity > 0}
                     />

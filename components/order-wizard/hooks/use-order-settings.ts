@@ -1,5 +1,13 @@
-import { DiscountType, PaymentMethod } from "@/lib/types";
+import { DeliveryType, DiscountType, PaymentMethod } from "@/lib/types";
 import { useState } from "react";
+
+function getDefaultDeliveryTime(): string {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + 30);
+  const hours = now.getHours().toString().padStart(2, "0");
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
 
 export function useOrderSettings() {
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">(
@@ -14,16 +22,16 @@ export function useOrderSettings() {
     "amount" | "percentage" | "none"
   >("none");
   const [discountValue, setDiscountValue] = useState(0);
-  const [deliveryTime, setDeliveryTime] = useState(""); // 🆕 Horario de entrega
+  const [deliveryTime, setDeliveryTime] = useState(getDefaultDeliveryTime);
 
   const reset = () => {
     setDeliveryType("delivery");
     setDeliveryFee(2000);
-    setPaymentMethod("transfer");
+    setPaymentMethod("cash");
     setDiscountType("none");
     setDiscountValue(0);
     setNotes("");
-    setDeliveryTime(""); // 🆕
+    setDeliveryTime(getDefaultDeliveryTime()); // recalcula al momento del reset
   };
 
   const loadSettings = (settings: {
@@ -33,7 +41,7 @@ export function useOrderSettings() {
     discountType: DiscountType;
     discountValue: number;
     notes: string;
-    deliveryTime?: string; // 🆕
+    deliveryTime?: string;
   }) => {
     setDeliveryType(settings.deliveryType);
     setDeliveryFee(settings.deliveryFee);
@@ -41,7 +49,7 @@ export function useOrderSettings() {
     setDiscountType(settings.discountType);
     setDiscountValue(settings.discountValue);
     setNotes(settings.notes);
-    setDeliveryTime(settings.deliveryTime || ""); // 🆕
+    setDeliveryTime(settings.deliveryTime || "");
   };
 
   return {
@@ -57,8 +65,8 @@ export function useOrderSettings() {
     setDiscountValue,
     notes,
     setNotes,
-    deliveryTime, // 🆕
-    setDeliveryTime, // 🆕
+    deliveryTime,
+    setDeliveryTime,
     reset,
     loadSettings,
   };
