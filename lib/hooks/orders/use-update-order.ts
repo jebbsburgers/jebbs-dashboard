@@ -15,7 +15,8 @@ export interface UpdateOrderPayload {
   discount_value: number;
   discount_amount: number;
   items: OrderItemInput[];
-  notes: string | null; // explícitamente string | null
+  notes: string | null;
+  delivery_time?: string | null;
 }
 
 export function useUpdateOrder() {
@@ -30,8 +31,6 @@ export function useUpdateOrder() {
       orderId: string;
       payload: UpdateOrderPayload;
     }) => {
-      console.log("🔄 Actualizando pedido:", orderId);
-
       // 1️⃣ Eliminar order_item_extras de los items viejos
       const { data: oldItems } = await supabase
         .from("order_items")
@@ -40,7 +39,6 @@ export function useUpdateOrder() {
 
       if (oldItems && oldItems.length > 0) {
         const oldItemIds = oldItems.map((item) => item.id);
-
         await supabase
           .from("order_item_extras")
           .delete()
@@ -52,12 +50,11 @@ export function useUpdateOrder() {
 
       // 3️⃣ Calcular nuevo total
       const totalAmount = payload.items.reduce((sum, item) => {
-        const itemTotal = item.subtotal;
         const extrasTotal = item.extras.reduce(
           (extSum, ext) => extSum + ext.subtotal,
           0,
         );
-        return sum + itemTotal + extrasTotal;
+        return sum + item.subtotal + extrasTotal;
       }, 0);
 
       const finalTotal =
@@ -73,7 +70,7 @@ export function useUpdateOrder() {
           delivery_type: payload.delivery_type,
           delivery_fee: payload.delivery_fee,
           payment_method: payload.payment_method,
-          delivery_time: payload.delivery_time, // 🆕 Agregar aquí también
+          delivery_time: payload.delivery_time ?? null,
           discount_type: payload.discount_type,
           discount_value: payload.discount_value,
           discount_amount: payload.discount_amount,
@@ -91,12 +88,13 @@ export function useUpdateOrder() {
       const itemsToInsert = payload.items.map((item) => ({
         order_id: orderId,
         burger_id: item.burger_id,
-        combo_id: item.combo_id,
+        combo_id: item.combo_id ?? null,
+        extra_id: item.extra_id ?? null, // 🆕
         burger_name: item.burger_name,
         quantity: item.quantity,
         unit_price: item.unit_price,
         subtotal: item.subtotal,
-        customizations: item.customizations,
+        customizations: item.customizations ?? null,
       }));
 
       const { data: insertedItems, error: itemsError } = await supabase
@@ -133,12 +131,9 @@ export function useUpdateOrder() {
         if (extrasError) throw extrasError;
       }
 
-      console.log("✅ Pedido actualizado exitosamente");
-
       return updatedOrder;
     },
     onSuccess: () => {
-      // Invalidar queries para refrescar datos
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["orders-history"] });
       queryClient.invalidateQueries({ queryKey: ["order-with-items"] });

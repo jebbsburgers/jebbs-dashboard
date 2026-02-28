@@ -14,52 +14,61 @@ import {
   useCreateCustomer,
   useCreateCustomerAddress,
 } from "@/lib/hooks/use-customers";
-import type { Extra, OrderWithItems } from "@/lib/types"; // 🆕
+import type { Extra, OrderWithItems } from "@/lib/types";
 import { loadOrderIntoWizard } from "@/services/order-data-loader";
 import { useUpdateOrder } from "@/lib/hooks/orders/use-update-order";
+import { useSidesSelection } from "./use-side-selection";
 
 interface UseOrderWizardParams {
   meatExtra?: { price: number } | null;
   friesExtra?: { price: number } | null;
-  mode?: "create" | "edit"; // 🆕
-  orderToEdit?: OrderWithItems | null; // 🆕
-  allBurgers?: any[]; // 🆕
-  allCombos?: any[]; // 🆕
-  allExtras?: Extra[]; // 🆕
+  mode?: "create" | "edit";
+  orderToEdit?: OrderWithItems | null;
+  allBurgers?: any[];
+  allCombos?: any[];
+  allExtras?: Extra[];
 }
 
 export function useOrderWizard({
   meatExtra,
   friesExtra,
-  mode = "create", // 🆕
-  orderToEdit, // 🆕
-  allBurgers = [], // 🆕
-  allCombos = [], // 🆕
-  allExtras = [], // 🆕
+  mode = "create",
+  orderToEdit,
+  allBurgers = [],
+  allCombos = [],
+  allExtras = [],
 }: UseOrderWizardParams) {
   // ================= HOOKS =================
   const customer = useCustomerSelection();
   const burgers = useBurgerSelection(meatExtra);
   const combos = useComboSelection();
   const settings = useOrderSettings();
-  const printOrder = usePrintOrder();
+  const sides = useSidesSelection();
 
-  // API Mutations
   const createOrder = useCreateOrder();
-  const updateOrder = useUpdateOrder(); // 🆕
+  const updateOrder = useUpdateOrder();
   const createCustomer = useCreateCustomer();
   const createCustomerAddress = useCreateCustomerAddress();
+  const printOrder = usePrintOrder();
 
   // ================= COMPUTED =================
 
   const subtotal = useMemo(() => {
+    // ✅ calculateSubtotal ya maneja burgers + combos + sides (incluyendo selectedExtras)
     return OrderPriceCalculator.calculateSubtotal(
       burgers.selectedBurgers,
       combos.selectedCombos,
+      sides.selectedSides,
       meatExtra,
       friesExtra,
     );
-  }, [burgers.selectedBurgers, combos.selectedCombos, meatExtra, friesExtra]);
+  }, [
+    burgers.selectedBurgers,
+    combos.selectedCombos,
+    sides.selectedSides,
+    meatExtra,
+    friesExtra,
+  ]);
 
   const discountAmount = useMemo(() => {
     return OrderPriceCalculator.calculateDiscountAmount(
@@ -70,9 +79,11 @@ export function useOrderWizard({
   }, [subtotal, settings.discountType, settings.discountValue]);
 
   const orderTotal = useMemo(() => {
+    // ✅ calculateOrderTotal ya maneja todo (burgers + combos + sides + descuento + delivery)
     return OrderPriceCalculator.calculateOrderTotal({
       selectedBurgers: burgers.selectedBurgers,
       selectedCombos: combos.selectedCombos,
+      selectedSides: sides.selectedSides,
       deliveryType: settings.deliveryType,
       deliveryFee: settings.deliveryFee,
       meatExtra,
@@ -83,6 +94,7 @@ export function useOrderWizard({
   }, [
     burgers.selectedBurgers,
     combos.selectedCombos,
+    sides.selectedSides,
     settings.deliveryType,
     settings.deliveryFee,
     meatExtra,
@@ -97,25 +109,23 @@ export function useOrderWizard({
 
   const canProceedFromCustomer = customer.canProceed;
 
-  const canProceedFromBurgers =
-    burgers.selectedBurgers.length > 0 || combos.selectedCombos.length > 0;
+  const canProceedFromBurgers = true;
+
+  const canProceedFromSides =
+    burgers.selectedBurgers.length > 0 ||
+    combos.selectedCombos.length > 0 ||
+    sides.selectedSides.length > 0;
 
   const canProceedFromCombos = useMemo(() => {
     if (combos.selectedCombos.length === 0) return true;
-
     return combos.selectedCombos.every((combo) => {
       return combo.slots.every((slot) => {
         const isRequired = slot.minQuantity > 0;
-
         if (!isRequired) return true;
-
-        // 🍔 Validar slots de burgers
         if (slot.slotType === "burger") {
           const totalQty = slot.burgers.reduce((acc, b) => acc + b.quantity, 0);
           return totalQty >= slot.minQuantity;
         }
-
-        // 🥤🍟 Validar slots de bebidas, sides y nuggets
         if (
           slot.slotType === "drink" ||
           slot.slotType === "side" ||
@@ -123,93 +133,67 @@ export function useOrderWizard({
         ) {
           return slot.selectedExtra !== null;
         }
-
         return true;
       });
     });
   }, [combos.selectedCombos]);
 
-  // ================= 🆕 LOAD DATA IN EDIT MODE =================
+  // ================= LOAD DATA IN EDIT MODE =================
 
   useEffect(() => {
     if (mode === "edit" && orderToEdit) {
-      console.log("🔄 Cargando pedido para editar:", orderToEdit);
-
       const wizardData = loadOrderIntoWizard(
         orderToEdit,
         allExtras,
         allBurgers,
         allCombos,
-        meatExtra, // 👈 agregar
+        meatExtra,
       );
 
-      // Cargar datos en cada módulo
       customer.loadCustomerData(wizardData.customerData);
       burgers.loadBurgers(wizardData.burgers);
       combos.loadCombos(wizardData.combos);
       settings.loadSettings(wizardData.settings);
-
-      console.log("✅ Datos cargados en wizard");
+      if (wizardData.sides) {
+        sides.loadSides(wizardData.sides);
+      }
     }
-  }, [mode, orderToEdit]); // Solo ejecutar cuando cambie mode o orderToEdit
+  }, [mode, orderToEdit]);
 
   // ================= ACTIONS =================
 
   const handleSubmit = async () => {
     try {
-      console.log("=== INICIO DE SUBMIT ===");
-      console.log("Modo:", mode);
-      console.log("Burgers:", burgers.selectedBurgers);
-      console.log("Combos:", combos.selectedCombos);
-
-      // 1️⃣ Transform data
-      const items: OrderItemInput[] =
+      const allItems: OrderItemInput[] =
         OrderDataTransformer.transformToOrderPayload(
           burgers.selectedBurgers,
           combos.selectedCombos,
           meatExtra,
           friesExtra,
+          sides.selectedSides,
         );
 
-      // 👇 AGREGÁ ESTO
-      console.log("=== ITEMS TRANSFORMADOS ===");
-      items.forEach((item) => {
-        console.log(`${item.burger_name}:`, item.customizations);
-      });
-
-      if (!items || items.length === 0) {
+      if (!allItems || allItems.length === 0) {
         throw new Error("No hay items en el pedido");
       }
 
       let customerId = customer.selectedCustomer?.id;
       let customerAddressId = customer.selectedAddress;
 
-      console.log("Customer ID:", customerId);
-      console.log("Address ID:", customerAddressId);
-
-      // 2️⃣ Create customer if needed (solo en modo create)
       if (!customerId && mode === "create") {
-        console.log("Creando nuevo customer...");
         const newCustomer = await createCustomer.mutateAsync({
           name: customer.newCustomerData.name,
           phone: customer.newCustomerData.phone,
         });
-
         customerId = newCustomer.id;
-        console.log("Nuevo customer creado:", customerId);
       }
 
-      // 3️⃣ Create address if needed (solo en modo create)
       if (
         !customerAddressId &&
         settings.deliveryType === "delivery" &&
         mode === "create"
       ) {
-        if (!customerId) {
-          throw new Error("Customer ID is required to create address");
-        }
-
-        console.log("Creando nueva dirección...");
+        if (!customerId) throw new Error("Customer ID is required to create address");
         const address = await createCustomerAddress.mutateAsync({
           customerId,
           address: customer.newAddressData.address,
@@ -217,17 +201,14 @@ export function useOrderWizard({
           notes: customer.newAddressData.notes,
           is_default: true,
         });
-
         customerAddressId = address.id;
-        console.log("Nueva dirección creada:", customerAddressId);
       }
 
-      // 4️⃣ Preparar payload
       const orderPayload = {
-        customer_id: customerId ?? null, // 🆕 Convertir undefined → null
+        customer_id: customerId ?? null,
         customer_name:
           customer.selectedCustomer?.name ?? customer.newCustomerData.name,
-        customer_address_id: customerAddressId ?? null, // 🆕 Convertir undefined → null
+        customer_address_id: customerAddressId ?? null,
         delivery_type: settings.deliveryType,
         delivery_fee:
           settings.deliveryType === "delivery" ? settings.deliveryFee : 0,
@@ -235,43 +216,31 @@ export function useOrderWizard({
         discount_type: settings.discountType,
         discount_value: settings.discountValue,
         discount_amount: discountAmount,
-        items,
-        notes: settings.notes || null, // 🆕 Convertir "" o undefined → null
-        delivery_time: settings.deliveryTime || null, // ✅ Agregar esto
+        items: allItems,
+        notes: settings.notes || null,
+        delivery_time: settings.deliveryTime || null,
       };
 
-      console.log("=== PAYLOAD FINAL ===");
-      console.log(JSON.stringify(orderPayload, null, 2));
-
-      // 5️⃣ CREATE o UPDATE según modo
       let orderId: string;
 
       if (mode === "edit" && orderToEdit) {
-        // 🆕 MODO EDIT: Actualizar pedido existente
-        console.log("🔄 Actualizando pedido existente:", orderToEdit.id);
         const updated = await updateOrder.mutateAsync({
           orderId: orderToEdit.id,
           payload: orderPayload,
         });
         orderId = updated.id;
       } else {
-        // MODO CREATE: Crear nuevo pedido
-        console.log("🆕 Creando nuevo pedido");
         const created = await createOrder.mutateAsync(orderPayload);
         orderId = created.id;
       }
 
-      // 🔥 Imprimir automáticamente
       try {
         await printOrder.mutateAsync(orderId);
       } catch (printError) {
         console.warn("⚠️ No se pudo imprimir automáticamente:", printError);
       }
-
-      console.log("=== ORDEN PROCESADA EXITOSAMENTE ===");
     } catch (error) {
-      console.error("=== ERROR EN SUBMIT ===");
-      console.error(error);
+      console.error("Error en submit:", error);
       throw error;
     }
   };
@@ -281,37 +250,33 @@ export function useOrderWizard({
     burgers.reset();
     combos.resetState();
     settings.reset();
+    sides.reset();
   };
 
-  // ================= RETURN =================
-
   return {
-    // State modules
     customer,
     burgers,
     combos,
     settings,
+    sides,
 
-    // Computed
     subtotal,
     orderTotal,
     extrasTotal,
     discountAmount,
     canProceedFromCustomer,
     canProceedFromBurgers,
+    canProceedFromSides,
     canProceedFromCombos,
 
-    // Actions
     handleSubmit,
     resetAll,
 
-    // Mutation states
     isSubmitting:
-      mode === "edit" ? updateOrder.isPending : createOrder.isPending, // 🆕
+      mode === "edit" ? updateOrder.isPending : createOrder.isPending,
     isCreatingCustomer: createCustomer.isPending,
     isCreatingAddress: createCustomerAddress.isPending,
 
-    // 🆕 Info de modo
     mode,
     orderToEdit,
   };

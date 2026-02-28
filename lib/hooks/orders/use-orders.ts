@@ -12,7 +12,39 @@ export function useOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*")
+        .select(
+          `
+          *,
+          customer:customers (
+            id,
+            name,
+            phone,
+            customer_addresses (
+              id,
+              label,
+              address,
+              notes,
+              is_default
+            )
+          ),
+          order_items (
+            id,
+            burger_name,
+            quantity,
+            unit_price,
+            subtotal,
+            customizations,
+            extra_id,
+            order_item_extras (
+              id,
+              extra_name,
+              quantity,
+              unit_price,
+              subtotal
+            )
+          )
+        `,
+        )
         .in("status", ["new", "ready"])
         .order("created_at", { ascending: false });
 
@@ -33,26 +65,24 @@ export function useOrderWithItems(orderId: string | null) {
     queryFn: async () => {
       if (!orderId) return null;
 
-      // 1️⃣ Pedido + dirección relacionada
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .select(
           `
-    *,
-    customer_address: customer_addresses (
-      id,
-      label,
-      address,
-      is_default
-    )
-  `,
+          *,
+          customer_address: customer_addresses (
+            id,
+            label,
+            address,
+            is_default
+          )
+        `,
         )
         .eq("id", orderId)
         .single();
 
       if (orderError) throw orderError;
 
-      // 2️⃣ Items del pedido
       const { data: items, error: itemsError } = await supabase
         .from("order_items")
         .select("*")
@@ -64,7 +94,6 @@ export function useOrderWithItems(orderId: string | null) {
         return { ...order, items: [] } as OrderWithItems;
       }
 
-      // 3️⃣ Extras por item
       const itemsWithExtras = await Promise.all(
         items.map(async (item) => {
           const { data: extras, error: extrasError } = await supabase
@@ -89,7 +118,6 @@ export function useOrderWithItems(orderId: string | null) {
   });
 }
 
-// 🆕 SOLUCIÓN 2: Optimistic update + refetch silencioso
 export function useUpdateOrderStatus() {
   const queryClient = useQueryClient();
   const supabase = createClient();
@@ -113,49 +141,37 @@ export function useUpdateOrderStatus() {
     },
 
     onMutate: async ({ orderId, status }) => {
-      // 🔒 Cancelar refetches automáticos
       await queryClient.cancelQueries({ queryKey: ["orders"] });
-
-      // 📸 Backup del estado anterior
       const previousOrders = queryClient.getQueryData<Order[]>(["orders"]);
 
-      // ⚡ Update optimista INMEDIATO
       queryClient.setQueryData<Order[]>(["orders"], (old) => {
         if (!old) return old;
-
-        // Actualizar el pedido y filtrar si ya no es "new" o "ready"
-        return (
-          old
-            .map((order) =>
-              order.id === orderId
-                ? { ...order, status, updated_at: new Date().toISOString() }
-                : order,
-            )
-            // 🆕 Filtrar pedidos que no son "new" o "ready"
-            .filter(
-              (order) => order.status === "new" || order.status === "ready",
-            )
-        );
+        return old
+          .map((order) =>
+            order.id === orderId
+              ? { ...order, status, updated_at: new Date().toISOString() }
+              : order,
+          )
+          .filter(
+            (order) => order.status === "new" || order.status === "ready",
+          );
       });
 
       return { previousOrders };
     },
 
     onError: (_err, _vars, context) => {
-      // 🔙 Restaurar en caso de error
       if (context?.previousOrders) {
         queryClient.setQueryData(["orders"], context.previousOrders);
       }
     },
 
     onSuccess: () => {
-      // 🆕 Refetch silencioso en background (sin afectar UI)
       queryClient.refetchQueries({
         queryKey: ["orders"],
         type: "active",
       });
 
-      // Invalidar historial normalmente
       queryClient.invalidateQueries({
         queryKey: ["orders-history"],
         exact: false,
@@ -229,7 +245,6 @@ export function useCancelOrder() {
 
       const previousOrders = queryClient.getQueryData<Order[]>(["orders"]);
 
-      // ⚡ Optimistic update + filtrar pedido cancelado
       queryClient.setQueryData<Order[]>(["orders"], (old) =>
         old
           ?.map((order) =>

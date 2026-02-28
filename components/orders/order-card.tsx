@@ -5,11 +5,13 @@ import type React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Eye, User, DollarSign, Edit, ArrowRight } from "lucide-react";
+import { Clock, Eye, User, DollarSign, Edit, ArrowRight, Copy } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
 import { useTogglePaymentStatus } from "@/lib/hooks/orders/use-orders";
 import { cn } from "@/lib/utils";
+import { formatOrderForWhatsapp } from "@/lib/utils/formatOrderWhatsapp";
+import { toast } from "sonner";
 
 const statusConfig = {
   new: { label: "Nuevo", className: "bg-blue-500 text-white" },
@@ -43,18 +45,26 @@ export function OrderCard({
     togglePayment.mutate({ orderId: order.id, isPaid: !order.is_paid });
   };
 
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = formatOrderForWhatsapp(order);
+    await navigator.clipboard.writeText(text);
+    toast.success("Pedido copiado para WhatsApp");
+  };
+
   const status = visualStatus ?? order.status;
   const config = statusConfig[status as keyof typeof statusConfig];
 
   return (
+    // ✅ Eliminado "hidden lg:block" — lo maneja el wrapper en SortableOrderCard
     <Card
       className={cn(
-        "hidden lg:block transition-all hover:shadow-md cursor-grab bg-card",
+        "transition-all hover:shadow-md cursor-grab bg-card",
         isDragging && "rotate-1",
       )}
     >
       <CardContent className="p-4">
-        {/* Header: Número, Badge y Payment Status */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <p className="font-mono text-lg font-semibold">
@@ -87,7 +97,7 @@ export function OrderCard({
           </div>
         </div>
 
-        {/* Info: Cliente y Tiempo */}
+        {/* Info: Cliente */}
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
           <div className="flex items-center gap-1.5">
             <User className="h-4 w-4" />
@@ -95,13 +105,23 @@ export function OrderCard({
           </div>
         </div>
 
-        {/* Footer: Total y Acciones */}
+        {/* Footer */}
         <div className="flex items-center justify-between pt-3 border-t">
           <p className="text-2xl font-bold">
             {formatCurrency(order.total_amount)}
           </p>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="cursor-pointer"
+              onClick={handleCopy}
+              title="Copiar para WhatsApp"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+
             {canEdit && onEditOrder && (
               <Button
                 variant="ghost"
@@ -126,9 +146,9 @@ export function OrderCard({
               <Eye className="mr-1.5 h-4 w-4" />
               Ver detalles
             </Button>
-            {/* 👇 NUEVO BOTÓN */}
           </div>
         </div>
+
         <div className="mt-8 w-full flex justify-end">
           {onChangeStatus &&
             (order.status === "new" || order.status === "ready") && (

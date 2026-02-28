@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { SelectedSide } from "../hooks/use-side-selection";
 
 interface SummaryStepProps {
   // Customer Info
@@ -22,11 +23,7 @@ interface SummaryStepProps {
   customerName: string;
   customerPhone?: string;
   selectedAddress?: CustomerAddress | null;
-  newAddressData?: {
-    label: string;
-    address: string;
-    notes: string;
-  };
+  newAddressData?: { label: string; address: string; notes: string };
 
   // Order Summary
   selectedBurgers: Array<{
@@ -70,13 +67,12 @@ interface SummaryStepProps {
           quantity: number;
         }>;
       }>;
-      selectedExtra: {
-        id: string;
-        name: string;
-        price: number;
-      } | null;
+      selectedExtra: { id: string; name: string; price: number } | null;
     }>;
   }>;
+
+  // 🆕 Sides
+  selectedSides: SelectedSide[];
 
   // Totals
   extrasTotal: number;
@@ -117,6 +113,7 @@ export function SummaryStep({
   newAddressData,
   selectedBurgers,
   selectedCombos,
+  selectedSides,
   orderTotal,
   meatExtra,
   friesExtra,
@@ -197,9 +194,9 @@ export function SummaryStep({
           <h3 className="text-sm font-medium">Método de pago</h3>
           <RadioGroup
             value={paymentMethod}
-            onValueChange={(value: "cash" | "transfer") => {
-              onPaymentMethodChange(value);
-            }}
+            onValueChange={(value: "cash" | "transfer") =>
+              onPaymentMethodChange(value)
+            }
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="cash" id="cash" />
@@ -226,9 +223,9 @@ export function SummaryStep({
             <Label>Método de entrega</Label>
             <RadioGroup
               value={deliveryType}
-              onValueChange={(value: "delivery" | "pickup") => {
-                onDeliveryTypeChange(value);
-              }}
+              onValueChange={(value: "delivery" | "pickup") =>
+                onDeliveryTypeChange(value)
+              }
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="pickup" id="pickup" />
@@ -333,42 +330,30 @@ export function SummaryStep({
       <Card className="bg-card">
         <CardContent className="p-4 space-y-4">
           <h3 className="text-sm font-medium">Descuento</h3>
-
           <div className="space-y-3">
             <Label>Tipo de descuento</Label>
             <RadioGroup
               value={discountType}
               onValueChange={(value: "amount" | "percentage" | "none") => {
                 onDiscountTypeChange(value);
-                if (value === "none") {
-                  onDiscountValueChange(0);
-                }
+                if (value === "none") onDiscountValueChange(0);
               }}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="none" id="discount-none" />
-                <Label
-                  htmlFor="discount-none"
-                  className="font-normal cursor-pointer"
-                >
+                <Label htmlFor="discount-none" className="font-normal cursor-pointer">
                   Sin descuento
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="percentage" id="discount-percentage" />
-                <Label
-                  htmlFor="discount-percentage"
-                  className="font-normal cursor-pointer"
-                >
+                <Label htmlFor="discount-percentage" className="font-normal cursor-pointer">
                   💸 Porcentaje (%)
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="amount" id="discount-amount" />
-                <Label
-                  htmlFor="discount-amount"
-                  className="font-normal cursor-pointer"
-                >
+                <Label htmlFor="discount-amount" className="font-normal cursor-pointer">
                   💰 Monto fijo ($)
                 </Label>
               </div>
@@ -386,13 +371,9 @@ export function SummaryStep({
                   min={0}
                   max={discountType === "percentage" ? 100 : undefined}
                   value={discountValue}
-                  onChange={(e) =>
-                    onDiscountValueChange(Number(e.target.value))
-                  }
+                  onChange={(e) => onDiscountValueChange(Number(e.target.value))}
                   placeholder={
-                    discountType === "percentage"
-                      ? "Ej: 10 (para 10%)"
-                      : "Ej: 5000"
+                    discountType === "percentage" ? "Ej: 10 (para 10%)" : "Ej: 5000"
                   }
                 />
                 {discountAmount > 0 && (
@@ -421,41 +402,23 @@ export function SummaryStep({
             {selectedBurgers.map((item) => {
               const baseMeat = item.burger.default_meat_quantity;
               const diffMeat = item.meatCount - baseMeat;
-
               const sizeLabel =
-                item.meatCount === 1
-                  ? "Simple"
-                  : item.meatCount === 2
-                    ? "Doble"
-                    : item.meatCount === 3
-                      ? "Triple"
-                      : item.meatCount === 4
-                        ? "Cuádruple"
-                        : item.meatCount === 5
-                          ? "Quíntuple"
-                          : `${item.meatCount} carnes`;
+                item.meatCount === 1 ? "Simple"
+                : item.meatCount === 2 ? "Doble"
+                : item.meatCount === 3 ? "Triple"
+                : item.meatCount === 4 ? "Cuádruple"
+                : item.meatCount === 5 ? "Quíntuple"
+                : `${item.meatCount} carnes`;
 
               const baseFries = item.burger.default_fries_quantity ?? 1;
               const diffFries = item.friesQuantity - baseFries;
-
               const basePrice = item.burger.base_price * item.quantity;
 
               let extrasPrice = 0;
-
-              // ✅ FIX: papas sin if (diffFries > 0), permite valores negativos (sin papas)
-              if (friesExtra) {
-                extrasPrice += diffFries * friesExtra.price * item.quantity;
-              }
-
-              // Medallones extra
-              if (diffMeat > 0 && meatExtra) {
-                extrasPrice += diffMeat * meatExtra.price * item.quantity;
-              }
-
-              // Otros extras
+              if (friesExtra) extrasPrice += diffFries * friesExtra.price * item.quantity;
+              if (diffMeat > 0 && meatExtra) extrasPrice += diffMeat * meatExtra.price * item.quantity;
               const otherExtrasPrice = item.selectedExtras.reduce(
-                (acc, ext) => acc + ext.extra.price * ext.quantity,
-                0,
+                (acc, ext) => acc + ext.extra.price * ext.quantity, 0,
               );
               extrasPrice += otherExtrasPrice;
 
@@ -465,38 +428,24 @@ export function SummaryStep({
                     <div className="flex-1">
                       <p className="font-medium">
                         {item.quantity}x {item.burger.name}{" "}
-                        <span className="text-xs text-muted-foreground">
-                          ({sizeLabel})
-                        </span>
+                        <span className="text-xs text-muted-foreground">({sizeLabel})</span>
                       </p>
-
                       <p className="text-xs text-muted-foreground mt-1">
                         Base: {formatCurrency(basePrice)}
                       </p>
-
                       <div className="mt-2 space-y-1">
-                        {/* Ingredientes removidos */}
                         {item.removedIngredients.length > 0 && (
                           <p className="text-xs text-muted-foreground">
                             • Sin: {item.removedIngredients.join(", ")}
                           </p>
                         )}
-
-                        {/* ✅ FIX: Papas — muestra descuento si diffFries < 0 */}
                         <p className="text-xs text-muted-foreground">
                           •{" "}
                           {item.friesQuantity === 0
                             ? "Sin papas"
                             : `${item.friesQuantity} ${item.friesQuantity === 1 ? "porción" : "porciones"} de papas`}
                           {friesExtra && diffFries !== 0 && (
-                            <span
-                              className={cn(
-                                "font-medium",
-                                diffFries < 0
-                                  ? "text-green-600 dark:text-green-400"
-                                  : "text-primary",
-                              )}
-                            >
+                            <span className={cn("font-medium", diffFries < 0 ? "text-green-600 dark:text-green-400" : "text-primary")}>
                               {" "}
                               {diffFries < 0
                                 ? `-${formatCurrency(Math.abs(diffFries) * friesExtra.price * item.quantity)}`
@@ -504,26 +453,16 @@ export function SummaryStep({
                             </span>
                           )}
                         </p>
-
-                        {/* Medallones extra */}
                         {diffMeat > 0 && meatExtra && (
                           <p className="text-xs text-muted-foreground">
                             • + {diffMeat}x Medallón extra{" "}
                             <span className="text-primary font-medium">
-                              +
-                              {formatCurrency(
-                                diffMeat * meatExtra.price * item.quantity,
-                              )}
+                              +{formatCurrency(diffMeat * meatExtra.price * item.quantity)}
                             </span>
                           </p>
                         )}
-
-                        {/* Otros extras */}
                         {item.selectedExtras.map((ext) => (
-                          <p
-                            key={ext.extra.id}
-                            className="text-xs text-muted-foreground"
-                          >
+                          <p key={ext.extra.id} className="text-xs text-muted-foreground">
                             • + {ext.quantity}x {ext.extra.name}{" "}
                             <span className="text-primary font-medium">
                               +{formatCurrency(ext.extra.price * ext.quantity)}
@@ -532,7 +471,6 @@ export function SummaryStep({
                         ))}
                       </div>
                     </div>
-
                     <div className="flex flex-col items-end ml-4">
                       <span className="font-semibold">
                         {formatCurrency(basePrice + extrasPrice)}
@@ -544,42 +482,29 @@ export function SummaryStep({
             })}
           </div>
 
-          <Separator className="my-3" />
+          {(selectedCombos.length > 0 || selectedSides.length > 0) && <Separator className="my-3" />}
 
           {/* Combos */}
           {selectedCombos.map((c) => {
             const comboBasePrice = c.combo.price * c.quantity;
-
             let comboExtrasPrice = 0;
 
             c.slots.forEach((slot) => {
               slot.burgers.forEach((burger) => {
                 const burgerExtras = burger.selectedExtras.reduce(
-                  (acc, ext) => acc + ext.extra.price * ext.quantity,
-                  0,
+                  (acc, ext) => acc + ext.extra.price * ext.quantity, 0,
                 );
-
                 let meatAdjustment = 0;
                 if (meatExtra) {
-                  const referenceMeatCount =
-                    slot.defaultMeatCount ??
-                    burger.burger.default_meat_quantity;
-                  const meatDiff = burger.meatCount - referenceMeatCount;
-                  meatAdjustment = meatDiff * meatExtra.price;
+                  const referenceMeatCount = slot.defaultMeatCount ?? burger.burger.default_meat_quantity;
+                  meatAdjustment = (burger.meatCount - referenceMeatCount) * meatExtra.price;
                 }
-
-                // ✅ FIX: también aplica en combos (sin if > 0)
                 let friesAdjustment = 0;
                 if (friesExtra) {
-                  const referenceFriesCount =
-                    burger.burger.default_fries_quantity ?? 1;
-                  const friesDiff = burger.friesQuantity - referenceFriesCount;
-                  friesAdjustment = friesDiff * friesExtra.price;
+                  const referenceFriesCount = burger.burger.default_fries_quantity ?? 1;
+                  friesAdjustment = (burger.friesQuantity - referenceFriesCount) * friesExtra.price;
                 }
-
-                comboExtrasPrice +=
-                  (burgerExtras + meatAdjustment + friesAdjustment) *
-                  burger.quantity;
+                comboExtrasPrice += (burgerExtras + meatAdjustment + friesAdjustment) * burger.quantity;
               });
             });
 
@@ -587,9 +512,7 @@ export function SummaryStep({
               <div key={c.id} className="border-b pb-3 last:border-0">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <p className="font-medium">
-                      {c.quantity}x {c.combo.name}
-                    </p>
+                    <p className="font-medium">{c.quantity}x {c.combo.name}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       Base: {formatCurrency(comboBasePrice)}
                     </p>
@@ -603,90 +526,55 @@ export function SummaryStep({
                   {c.slots.map((slot) => (
                     <div key={slot.slotId}>
                       {slot.burgers.map((b, burgerIndex) => {
-                        const referenceMeatCount =
-                          slot.defaultMeatCount ??
-                          b.burger.default_meat_quantity;
+                        const referenceMeatCount = slot.defaultMeatCount ?? b.burger.default_meat_quantity;
                         const meatDiff = b.meatCount - referenceMeatCount;
-
-                        const referenceFriesCount =
-                          b.burger.default_fries_quantity ?? 1;
+                        const referenceFriesCount = b.burger.default_fries_quantity ?? 1;
                         const friesDiff = b.friesQuantity - referenceFriesCount;
-
                         const comboSizeLabel =
-                          b.meatCount === 1
-                            ? "Simple"
-                            : b.meatCount === 2
-                              ? "Doble"
-                              : b.meatCount === 3
-                                ? "Triple"
-                                : b.meatCount === 4
-                                  ? "Cuádruple"
-                                  : b.meatCount === 5
-                                    ? "Quíntuple"
-                                    : `${b.meatCount} carnes`;
+                          b.meatCount === 1 ? "Simple"
+                          : b.meatCount === 2 ? "Doble"
+                          : b.meatCount === 3 ? "Triple"
+                          : b.meatCount === 4 ? "Cuádruple"
+                          : b.meatCount === 5 ? "Quíntuple"
+                          : `${b.meatCount} carnes`;
 
                         return (
                           <div key={burgerIndex} className="ml-4 space-y-1">
                             <p className="text-sm font-medium text-muted-foreground">
                               • {b.quantity}x {b.burger.name}{" "}
-                              <span className="text-xs">
-                                ({comboSizeLabel})
-                              </span>
+                              <span className="text-xs">({comboSizeLabel})</span>
                             </p>
-
                             <div className="ml-4 space-y-0.5">
                               {b.removedIngredients.length > 0 && (
                                 <p className="text-xs text-muted-foreground">
                                   • Sin: {b.removedIngredients.join(", ")}
                                 </p>
                               )}
-
-                              {/* ✅ FIX: Papas en combos con descuento */}
                               <p className="text-xs text-muted-foreground">
                                 •{" "}
-                                {b.friesQuantity === 0
-                                  ? "Sin papas"
+                                {b.friesQuantity === 0 ? "Sin papas"
                                   : `${b.friesQuantity} ${b.friesQuantity === 1 ? "porción" : "porciones"} de papas`}
                                 {friesExtra && friesDiff !== 0 && (
-                                  <span
-                                    className={cn(
-                                      "font-medium",
-                                      friesDiff < 0
-                                        ? "text-green-600 dark:text-green-400"
-                                        : "text-primary",
-                                    )}
-                                  >
-                                    {" "}
-                                    {friesDiff < 0
+                                  <span className={cn("font-medium", friesDiff < 0 ? "text-green-600 dark:text-green-400" : "text-primary")}>
+                                    {" "}{friesDiff < 0
                                       ? `-${formatCurrency(Math.abs(friesDiff) * friesExtra.price * b.quantity)}`
                                       : `+${formatCurrency(friesDiff * friesExtra.price * b.quantity)}`}
                                   </span>
                                 )}
                               </p>
-
                               {meatDiff > 0 && meatExtra && (
                                 <p className="text-xs text-muted-foreground">
                                   • + {meatDiff}x Medallón extra{" "}
                                   <span className="text-primary font-medium">
-                                    +
-                                    {formatCurrency(
-                                      meatDiff * meatExtra.price * b.quantity,
-                                    )}
+                                    +{formatCurrency(meatDiff * meatExtra.price * b.quantity)}
                                   </span>
                                 </p>
                               )}
-
                               {b.selectedExtras.map((ext) => (
-                                <p
-                                  key={ext.extra.id}
-                                  className="text-xs text-muted-foreground"
-                                >
+                                <p key={ext.extra.id} className="text-xs text-muted-foreground">
                                   • + {ext.quantity}x {ext.extra.name}{" "}
                                   <span className="text-primary font-medium">
-                                    +
-                                    {formatCurrency(
-                                      ext.extra.price * ext.quantity,
-                                    )}
+                                    +{formatCurrency(ext.extra.price * ext.quantity)}
                                   </span>
                                 </p>
                               ))}
@@ -710,7 +598,47 @@ export function SummaryStep({
             );
           })}
 
+          {/* Sides — mismo estilo que burgers/combos */}
+          {selectedSides.map((item) => {
+            const extrasPrice = (item.selectedExtras ?? []).reduce(
+              (acc, e) => acc + e.extra.price * e.quantity,
+              0,
+            );
+            const total = item.extra.price * item.quantity + extrasPrice;
+
+            return (
+              <div key={item.id} className="pb-3 last:border-0">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {item.quantity}x {item.extra.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatCurrency(item.extra.price)} c/u
+                    </p>
+                    {(item.selectedExtras ?? []).length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {(item.selectedExtras ?? []).map((ext) => (
+                          <p key={ext.extra.id} className="text-xs text-muted-foreground">
+                            • + {ext.quantity}x {ext.extra.name}{" "}
+                            <span className="text-primary font-medium">
+                              +{formatCurrency(ext.extra.price * ext.quantity)}
+                            </span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span className="font-semibold ml-4">
+                    {formatCurrency(total)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+
           {/* Totals */}
+          <Separator className="my-3" />
           <div className="space-y-1 text-sm">
             {discountAmount > 0 && (
               <div className="flex justify-between text-green-600 dark:text-green-400">
@@ -721,19 +649,15 @@ export function SummaryStep({
                 <span>-{formatCurrency(discountAmount)}</span>
               </div>
             )}
-
             {deliveryType === "delivery" && (
               <div className="flex justify-between text-muted-foreground">
                 <span>Envío</span>
                 <span>{formatCurrency(deliveryFee)}</span>
               </div>
             )}
-
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Método de pago</span>
-              <span>
-                {paymentMethod === "cash" ? "Efectivo" : "Transferencia"}
-              </span>
+              <span>{paymentMethod === "cash" ? "Efectivo" : "Transferencia"}</span>
             </div>
           </div>
 

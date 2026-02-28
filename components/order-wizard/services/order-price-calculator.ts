@@ -1,13 +1,13 @@
 import { SelectedBurger } from "@/lib/types/combo-types";
+import { SelectedSide } from "../hooks/use-side-selection";
 
 interface SelectedComboSlot {
   slotId: string;
-  slotType: "burger" | "drink" | "side" | "nuggets"; // 🆕 Agregar nuggets
+  slotType: "burger" | "drink" | "side" | "nuggets";
   maxQuantity: number;
   defaultMeatCount?: number;
   burgers: SelectedBurger[];
   selectedExtra?: {
-    // 🆕 Agregar selectedExtra
     id: string;
     name: string;
     price: number;
@@ -24,6 +24,7 @@ interface SelectedCombo {
 interface PriceCalculatorParams {
   selectedBurgers: SelectedBurger[];
   selectedCombos: SelectedCombo[];
+  selectedSides: SelectedSide[];
   deliveryType: "delivery" | "pickup";
   deliveryFee: number;
   meatExtra?: { price: number } | null;
@@ -63,7 +64,6 @@ export class OrderPriceCalculator {
     friesExtra?: { price: number } | null,
   ): number {
     return combos.reduce((comboAcc, c) => {
-      // 🆕 Guard: si combo.price es null/undefined, usar 0
       const comboBasePrice = (c.combo?.price ?? 0) * c.quantity;
 
       const comboExtrasAndMore = c.slots.reduce((slotAcc, slot) => {
@@ -95,7 +95,6 @@ export class OrderPriceCalculator {
           );
         }, 0);
 
-        // 🆕 Agregar precio de selectedExtra si existe
         let selectedExtraPrice = 0;
         if (slot.selectedExtra && slot.selectedExtra.price > 0) {
           selectedExtraPrice = slot.selectedExtra.price;
@@ -118,13 +117,11 @@ export class OrderPriceCalculator {
     }, 0);
   }
 
-  // Calcular monto de descuento
   static calculateDiscountAmount(
     subtotal: number,
     discountType: "amount" | "percentage" | "none",
     discountValue: number,
   ): number {
-    // 🆕 Guard: asegurar que subtotal es número
     const safeSubtotal = Number(subtotal) || 0;
     const safeValue = Number(discountValue) || 0;
 
@@ -147,6 +144,7 @@ export class OrderPriceCalculator {
   static calculateOrderTotal(params: {
     selectedBurgers: SelectedBurger[];
     selectedCombos: any[];
+    selectedSides: SelectedSide[]; // ✅
     deliveryType: string;
     deliveryFee: number;
     meatExtra?: { price: number } | null;
@@ -154,24 +152,26 @@ export class OrderPriceCalculator {
     discountType?: string;
     discountValue?: number;
   }) {
-    // 🆕 Guards para arrays
     const safeBurgers = Array.isArray(params.selectedBurgers)
       ? params.selectedBurgers
       : [];
     const safeCombos = Array.isArray(params.selectedCombos)
       ? params.selectedCombos
       : [];
+    const safeSides = Array.isArray(params.selectedSides) // ✅
+      ? params.selectedSides
+      : [];
 
     const subtotal = this.calculateSubtotal(
       safeBurgers,
       safeCombos,
+      safeSides, // ✅
       params.meatExtra,
       params.friesExtra,
     );
 
     console.log("🔍 SUBTOTAL:", subtotal);
 
-    // 🆕 Normalizar discountType a tipo correcto
     const normalizedDiscountType =
       params.discountType === "amount" || params.discountType === "percentage"
         ? params.discountType
@@ -194,14 +194,13 @@ export class OrderPriceCalculator {
 
     console.log("🔍 TOTAL FINAL:", total);
 
-    // 🆕 Guard final: asegurar que retornamos un número válido
     return Number.isFinite(total) ? total : 0;
   }
 
-  // Método helper para obtener el subtotal
   static calculateSubtotal(
     selectedBurgers: SelectedBurger[],
     selectedCombos: SelectedCombo[],
+    selectedSides: SelectedSide[],
     meatExtra?: { price: number } | null,
     friesExtra?: { price: number } | null,
   ): number {
@@ -216,9 +215,17 @@ export class OrderPriceCalculator {
       friesExtra,
     );
 
-    const total = burgersTotal + combosTotal;
+    // ✅ Guard + incluye selectedExtras de cada side
+    const safeSides = Array.isArray(selectedSides) ? selectedSides : [];
+    const sidesTotal = safeSides.reduce((acc, side) => {
+      const base = side.extra.price * side.quantity;
+      const extras = side.selectedExtras.reduce(
+        (sum, e) => sum + e.extra.price * e.quantity,
+        0,
+      );
+      return acc + base + extras;
+    }, 0);
 
-    // 🆕 Guard: asegurar número válido
-    return Number.isFinite(total) ? total : 0;
+    return burgersTotal + combosTotal + sidesTotal;
   }
 }

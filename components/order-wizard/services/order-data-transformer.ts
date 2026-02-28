@@ -1,13 +1,14 @@
 import type { OrderItemInput } from "@/lib/hooks/orders/use-create-order";
 import { SelectedBurger } from "@/lib/types/combo-types";
+import { SelectedSide } from "../hooks/use-side-selection";
 
 interface SelectedComboSlot {
   slotId: string;
-  slotType: "burger" | "drink" | "side" | "nuggets"; // 🆕 Agregar "nuggets"
+  slotType: "burger" | "drink" | "side" | "nuggets";
   maxQuantity: number;
   defaultMeatCount?: number;
   burgers: SelectedBurger[];
-  selectedExtra: { id: string; name: string; price: number } | null; // 🆕
+  selectedExtra: { id: string; name: string; price: number } | null;
 }
 
 interface SelectedCombo {
@@ -36,7 +37,7 @@ export class OrderDataTransformer {
       const customizationData = {
         meatCount: item.meatCount,
         friesQuantity: item.friesQuantity,
-        friesAdjustment, // 👈 agregar
+        friesAdjustment,
         removedIngredients: item.removedIngredients,
         extras: item.selectedExtras.map((ext) => ({
           id: ext.extra.id,
@@ -52,7 +53,7 @@ export class OrderDataTransformer {
         burger_name: item.burger.name,
         quantity: item.quantity,
         unit_price: unitPrice,
-        subtotal: unitPrice * item.quantity + friesAdjustment, // ✅ sin extrasTotal
+        subtotal: unitPrice * item.quantity + friesAdjustment,
         customizations: JSON.stringify(customizationData),
         extras: item.selectedExtras.map((ext) => ({
           extra_id: ext.extra.id,
@@ -80,7 +81,6 @@ export class OrderDataTransformer {
             0,
           );
 
-          // Medallones
           let meatAdjustment = 0;
           if (meatExtra) {
             const referenceMeatCount =
@@ -89,7 +89,6 @@ export class OrderDataTransformer {
             meatAdjustment = meatDiff * meatExtra.price;
           }
 
-          // Papas
           let friesAdjustment = 0;
           if (friesExtra) {
             const referenceFriesCount =
@@ -102,7 +101,6 @@ export class OrderDataTransformer {
             (burgerExtras + meatAdjustment + friesAdjustment) * burger.quantity;
         });
 
-        // 🆕 Sumar precio de selectedExtra si existe
         if (slot.selectedExtra && slot.selectedExtra.price > 0) {
           comboSubtotal += slot.selectedExtra.price * c.quantity;
         }
@@ -118,13 +116,13 @@ export class OrderDataTransformer {
         customizations: JSON.stringify(
           c.slots.map((s) => ({
             slotId: s.slotId,
-            slotType: s.slotType, // 🆕 Incluir slotType
+            slotType: s.slotType,
             burgers: s.burgers.map((b) => ({
               burgerId: b.burger.id,
               name: b.burger.name,
               meatCount: b.meatCount,
               friesQuantity: b.friesQuantity,
-              friesAdjustment: friesExtra // 👈 agregar
+              friesAdjustment: friesExtra
                 ? (b.friesQuantity - (b.burger.default_fries_quantity ?? 1)) *
                   friesExtra.price *
                   b.quantity
@@ -138,7 +136,6 @@ export class OrderDataTransformer {
                 price: ext.extra.price,
               })),
             })),
-            // 🆕 Incluir selectedExtra
             selectedExtra: s.selectedExtra
               ? {
                   id: s.selectedExtra.id,
@@ -153,19 +150,43 @@ export class OrderDataTransformer {
     });
   }
 
+  // 🆕 Sides como order items independientes
+static transformSidesToOrderItems(sides: SelectedSide[]): OrderItemInput[] {
+  return sides.map((s) => ({
+    burger_id: null,
+    combo_id: null,
+    extra_id: s.extra.id,
+    burger_name: s.extra.name,
+    quantity: s.quantity,
+    unit_price: s.extra.price,
+
+    // 🔥 SOLO el precio base
+    subtotal: s.extra.price * s.quantity,
+
+    customizations: null,
+
+    // los extras van separados
+    extras: s.selectedExtras.map((e) => ({
+      extra_id: e.extra.id,
+      extra_name: e.extra.name,
+      quantity: e.quantity,
+      unit_price: e.extra.price,
+      subtotal: e.extra.price * e.quantity,
+    })),
+  }));
+}
+
   static transformToOrderPayload(
     burgers: SelectedBurger[],
     combos: SelectedCombo[],
     meatExtra?: { price: number } | null,
     friesExtra?: { price: number } | null,
+    sides?: SelectedSide[],
   ): OrderItemInput[] {
-    const comboItems = this.transformCombosToOrderItems(
-      combos,
-      meatExtra,
-      friesExtra,
-    );
+    const comboItems = this.transformCombosToOrderItems(combos, meatExtra, friesExtra);
     const burgerItems = this.transformBurgersToOrderItems(burgers, friesExtra);
+    const sideItems = sides?.length ? this.transformSidesToOrderItems(sides) : [];
 
-    return [...comboItems, ...burgerItems];
+    return [...comboItems, ...burgerItems, ...sideItems];
   }
 }

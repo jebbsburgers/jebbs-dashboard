@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
@@ -84,9 +85,13 @@ export function CombosStep({
   friesExtra,
   extrasByCategory,
 }: CombosStepProps) {
-  // IDs de combos que ya fueron seleccionados al menos una vez
-  const selectedComboIds = new Set(
-    selectedCombos.map((c) => c.combo.id),
+  // Cantidad de instancias por combo id para el badge
+  const comboCount = selectedCombos.reduce(
+    (acc, c) => {
+      acc[c.combo.id] = (acc[c.combo.id] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
   );
 
   return (
@@ -101,19 +106,25 @@ export function CombosStep({
           {availableCombos
             .filter((c) => c.is_available)
             .map((combo) => {
-              const isSelected = selectedComboIds.has(combo.id);
+              const qty = comboCount[combo.id] ?? 0;
               return (
                 <Card
                   key={combo.id}
                   className={cn(
-                    "cursor-pointer transition-all bg-card",
-                    isSelected
+                    "cursor-pointer transition-all bg-card relative",
+                    qty > 0
                       ? "ring-2 ring-primary border-primary"
                       : "hover:shadow-sm",
                   )}
                   onClick={() => onAddCombo(combo)}
                 >
                   <CardContent className="p-3">
+                    {/* ✅ Badge igual que en burgers */}
+                    {qty > 0 && (
+                      <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                        {qty}
+                      </Badge>
+                    )}
                     <p className="font-medium">{combo.name}</p>
                     <p className="text-sm font-semibold text-primary">
                       {formatCurrency(combo.price)}

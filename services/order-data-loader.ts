@@ -2,28 +2,24 @@ import { nanoid } from "nanoid";
 import type { Extra } from "@/lib/types";
 import type { OrderWithItems } from "@/lib/types";
 import { SelectedBurger, SelectedCombo } from "@/lib/types/combo-types";
+import { SelectedSide } from "@/components/order-wizard/hooks/use-side-selection";
 
-/**
- * Carga un pedido completo en el estado del wizard
- */
 export function loadOrderIntoWizard(
   order: OrderWithItems,
   allExtras: Extra[],
   allBurgers: any[],
   allCombos: any[],
-  meatExtra?: { price: number } | null, // 👈 agregar
+  meatExtra?: { price: number } | null,
 ) {
   return {
     customerData: loadCustomerData(order),
-    burgers: loadBurgers(order, allBurgers, allExtras, meatExtra), // 👈 pasar
+    burgers: loadBurgers(order, allBurgers, allExtras, meatExtra),
     combos: loadCombos(order, allCombos, allBurgers, allExtras),
     settings: loadSettings(order),
+    sides: loadSides(order, allExtras),
   };
 }
 
-/**
- * Extrae datos del cliente
- */
 function loadCustomerData(order: OrderWithItems) {
   return {
     customerName: order.customer_name,
@@ -33,14 +29,11 @@ function loadCustomerData(order: OrderWithItems) {
   };
 }
 
-/**
- * Extrae settings del pedido
- */
 function loadSettings(order: OrderWithItems) {
   return {
     deliveryType: order.delivery_type as "delivery" | "pickup",
     deliveryFee: order.delivery_fee || 0,
-    deliveryTime: order.delivery_time || "", // 🆕 CRÍTICO para edición
+    deliveryTime: order.delivery_time || "",
     paymentMethod: order.payment_method as "cash" | "transfer",
     discountType:
       (order.discount_type as "amount" | "percentage" | "none") || "none",
@@ -48,28 +41,26 @@ function loadSettings(order: OrderWithItems) {
     notes: order.notes || "",
   };
 }
-/**
- * Carga burgers individuales (items sin combo_id)
- */
+
 function loadBurgers(
   order: OrderWithItems,
   allBurgers: any[],
   allExtras: Extra[],
-  meatExtra?: { price: number } | null, // 👈 agregar
+  meatExtra?: { price: number } | null,
 ): SelectedBurger[] {
-  const burgerItems = order.items.filter((item) => !item.combo_id);
+  // Sides se identifican por extra_id != null, no por parsear customizations
+  const burgerItems = order.items.filter(
+    (item) => !item.combo_id && !item.extra_id,
+  );
 
   return burgerItems
     .map((item) => {
-      // Encontrar burger original
       const burger = allBurgers.find((b) => b.id === item.burger_id);
-
       if (!burger) {
         console.warn(`Burger ${item.burger_id} not found`);
         return null;
       }
 
-      // Parsear customizations
       let customData: any = null;
       if (item.customizations) {
         try {
@@ -79,7 +70,6 @@ function loadBurgers(
         }
       }
 
-      // Reconstruir extras
       const selectedExtras = (item.extras || []).map((extraItem) => {
         const extra = allExtras.find((e) => e.id === extraItem.extra_id);
         return {
@@ -98,45 +88,83 @@ function loadBurgers(
       const meatCount =
         customData?.meatCount || burger.default_meat_quantity || 2;
       const meatDiff = meatCount - (burger.default_meat_quantity || 2);
-      const meatPriceAdjustment = meatExtra ? meatDiff * meatExtra.price : 0; // 👈
+      const meatPriceAdjustment = meatExtra ? meatDiff * meatExtra.price : 0;
 
       return {
         id: nanoid(),
         burger,
         quantity: item.quantity,
-        meatCount: customData?.meatCount || burger.default_meat_quantity || 2,
+        meatCount,
         friesQuantity:
           customData?.friesQuantity ?? burger.default_fries_quantity ?? 1,
         removedIngredients: customData?.removedIngredients || [],
         selectedExtras,
-        meatPriceAdjustment, // 👈 usar calculado
+        meatPriceAdjustment,
       };
     })
     .filter(Boolean) as SelectedBurger[];
 }
 
-/**
- * Carga combos (items con combo_id)
- */
+function loadSides(order: OrderWithItems, allExtras: Extra[]): SelectedSide[] {
+  const sideItems = order.items.filter((item) => !!item.extra_id);
+
+  return sideItems.map((item) => {
+    const extra = allExtras.find((e) => e.id === item.extra_id);
+
+    const selectedExtras = (item.extras || []).map((extraItem) => {
+      const e = allExtras.find((e) => e.id === extraItem.extra_id);
+      return {
+        extra: e || {
+          id: extraItem.extra_id,
+          name: extraItem.extra_name,
+          price: extraItem.unit_price,
+          category: "extra" as const,
+          is_available: true,
+          created_at: new Date().toISOString(),
+        },
+        quantity: extraItem.quantity,
+      };
+    });
+
+    if (!extra) {
+      return {
+        id: nanoid(),
+        extra: {
+          id: item.extra_id!,
+          name: item.burger_name,
+          price: item.unit_price,
+          category: "sides" as const,
+          is_available: true,
+          created_at: new Date().toISOString(),
+        } as Extra,
+        quantity: item.quantity,
+        selectedExtras,
+        expanded: false,
+      };
+    }
+
+    return {
+      id: nanoid(),
+      extra,
+      quantity: item.quantity,
+      selectedExtras,
+      expanded: false,
+    };
+  });
+}
+
 function loadCombos(
   order: OrderWithItems,
   allCombos: any[],
   allBurgers: any[],
   allExtras: Extra[],
-) {
+): SelectedCombo[] {
   const comboItems = order.items.filter((item) => item.combo_id);
 
   return comboItems
     .map((item) => {
-      // Buscar combo original
       const combo = allCombos.find((c) => c.id === item.combo_id);
 
-      console.log("🔍 LOADING COMBO:");
-      console.log("  - Item from DB:", item);
-      console.log("  - Combo found:", combo);
-      console.log("  - Using price:", item.unit_price);
-
-      // Parsear customizations (array de slots)
       let slotsData: any[] = [];
       if (item.customizations) {
         try {
@@ -146,32 +174,21 @@ function loadCombos(
         }
       }
 
-      // Reconstruir slots
       const slots = slotsData
         .map((slotData) => {
-          // Encontrar slot original en el combo (si existe)
           const originalSlot = combo?.slots?.find(
             (s: any) => s.id === slotData.slotId,
           );
 
-          if (!originalSlot && !slotData.slotId) {
-            console.warn("Slot without ID");
-            return null;
-          }
+          if (!originalSlot && !slotData.slotId) return null;
 
-          // Reconstruir burgers del slot
           const burgers = (slotData.burgers || [])
             .map((burgerData: any) => {
               const burger = allBurgers.find(
                 (b) => b.id === burgerData.burgerId,
               );
+              if (!burger) return null;
 
-              if (!burger) {
-                console.warn(`Burger ${burgerData.burgerId} not found in slot`);
-                return null;
-              }
-
-              // Reconstruir extras de la burger
               const selectedExtras = (burgerData.extras || []).map(
                 (extraData: any) => {
                   const extra = allExtras.find((e) => e.id === extraData.id);
@@ -202,7 +219,6 @@ function loadCombos(
             })
             .filter(Boolean);
 
-          // Reconstruir selectedExtra (bebida o nuggets)
           let selectedExtra = null;
           if (slotData.selectedExtra) {
             const extra = allExtras.find(
@@ -227,27 +243,23 @@ function loadCombos(
               Number(originalSlot?.quantity) ??
               1,
             defaultMeatCount: Number(originalSlot?.default_meat_quantity) ?? 2,
-            rules: originalSlot?.rules || {
-              min_quantity: 1,
-              max_quantity: 1,
-            },
+            rules: originalSlot?.rules || { min_quantity: 1, max_quantity: 1 },
             burgers,
             selectedExtra,
           };
         })
         .filter(Boolean);
 
-      // 🆕 Crear ComboSnapshot con datos históricos
       return {
         id: nanoid(),
         combo: {
           id: item.combo_id || nanoid(),
-          name: item.burger_name, // Nombre histórico
-          price: Number(item.unit_price) || 0, // Precio histórico
-          description: combo?.description || null, // 🆕
-          is_available: combo?.is_available ?? true, // 🆕
-          created_at: combo?.created_at || new Date().toISOString(), // 🆕
-          slots: combo?.slots || [], // 🆕 Slots originales (pueden estar vacíos)
+          name: item.burger_name,
+          price: Number(item.unit_price) || 0,
+          description: combo?.description || null,
+          is_available: combo?.is_available ?? true,
+          created_at: combo?.created_at || new Date().toISOString(),
+          slots: combo?.slots || [],
         },
         quantity: item.quantity,
         slots,

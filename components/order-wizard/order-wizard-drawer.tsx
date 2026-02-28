@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -13,9 +13,10 @@ import { useBurgers, useExtras, useCustomers } from "@/lib/hooks/use-menu";
 import { useCustomerAddresses } from "@/lib/hooks/use-customers";
 import { useAllCombos } from "@/lib/hooks/use-combos";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/format";
 import { EditCustomerModal } from "../orders/edit/edit-customer-modal";
-
 import { useOrderWizard } from "./hooks/use-order-wizard";
+import { useMemo, useEffect } from "react";
 
 import {
   CustomerStep,
@@ -24,6 +25,7 @@ import {
   SummaryStep,
 } from "./steps/index";
 import type { OrderWithItems } from "@/lib/types";
+import { SidesStep } from "./steps/side-step";
 
 interface OrderWizardDrawerProps {
   open: boolean;
@@ -32,7 +34,7 @@ interface OrderWizardDrawerProps {
   orderToEdit?: OrderWithItems | null;
 }
 
-type WizardStep = "customer" | "combos" | "burgers" | "summary";
+type WizardStep = "customer" | "combos" | "burgers" | "sides" | "summary";
 
 const CUSTOMERS_PER_PAGE = 5;
 
@@ -43,8 +45,6 @@ export function OrderWizardDrawer({
   orderToEdit,
 }: OrderWizardDrawerProps) {
   const [step, setStep] = useState<WizardStep>("customer");
-
-  // Paginación de clientes
   const [customerPage, setCustomerPage] = useState(1);
 
   // ================= DATA LOADING =================
@@ -64,10 +64,16 @@ export function OrderWizardDrawer({
     [extras],
   );
 
+  const availableSides = useMemo(
+    () => extras?.filter((e) => e.category === "sides" && e.is_available) ?? [],
+    [extras],
+  );
+
   const extrasByCategory = useMemo(() => {
     if (!extras) return {};
     return extras.reduce(
       (acc, extra) => {
+        if (extra.category === "sides") return acc;
         if (!acc[extra.category]) acc[extra.category] = [];
         acc[extra.category].push(extra);
         return acc;
@@ -100,9 +106,7 @@ export function OrderWizardDrawer({
   // ================= FILTERED CUSTOMERS =================
   const filteredCustomers = useMemo(() => {
     if (!customers || !wizard.customer.customerSearch) return customers || [];
-
     const search = wizard.customer.customerSearch.toLowerCase();
-
     return customers.filter(
       (c) =>
         c.name.toLowerCase().includes(search) ||
@@ -110,7 +114,6 @@ export function OrderWizardDrawer({
     );
   }, [customers, wizard.customer.customerSearch]);
 
-  // Reset página cuando cambia la búsqueda
   useEffect(() => {
     setCustomerPage(1);
   }, [wizard.customer.customerSearch]);
@@ -118,6 +121,22 @@ export function OrderWizardDrawer({
   const customerTotalPages = Math.ceil(
     filteredCustomers.length / CUSTOMERS_PER_PAGE,
   );
+
+  // ================= ITEM COUNTS (para badges) =================
+  const totalBurgerItems = wizard.burgers.selectedBurgers.reduce(
+    (acc, b) => acc + b.quantity,
+    0,
+  );
+  const totalComboItems = wizard.combos.selectedCombos.length;
+  const totalSideItems = wizard.sides.selectedSides.reduce(
+    (acc, s) => acc + s.quantity,
+    0,
+  );
+  const totalItems = totalBurgerItems + totalComboItems + totalSideItems;
+
+  // Mostrar barra de total en steps intermedios
+  const showTotalBar =
+    step === "combos" || step === "burgers" || step === "sides";
 
   // ================= HANDLERS =================
   const handleClose = (open: boolean) => {
@@ -143,10 +162,26 @@ export function OrderWizardDrawer({
     { key: "customer", label: "Cliente" },
     { key: "combos", label: "Combos" },
     { key: "burgers", label: "Hamburguesas" },
+    { key: "sides", label: "Acomp." },
     { key: "summary", label: "Resumen" },
   ];
 
   const currentStepIndex = steps.findIndex((s) => s.key === step);
+
+  // ================= NAVIGATION =================
+  const goNext = () => {
+    if (step === "customer") setStep("combos");
+    else if (step === "combos") setStep("burgers");
+    else if (step === "burgers") setStep("sides");
+    else if (step === "sides") setStep("summary");
+  };
+
+  const goBack = () => {
+    if (step === "combos") setStep("customer");
+    else if (step === "burgers") setStep("combos");
+    else if (step === "sides") setStep("burgers");
+    else if (step === "summary") setStep("sides");
+  };
 
   // ================= RENDER =================
   return (
@@ -164,9 +199,9 @@ export function OrderWizardDrawer({
                 : "Crear Pedido"}
             </SheetTitle>
 
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-2 overflow-x-auto pb-1">
               {steps.map((s, i) => (
-                <div key={s.key} className="flex items-center">
+                <div key={s.key} className="flex items-center shrink-0">
                   <div
                     className={cn(
                       "flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-colors",
@@ -183,9 +218,9 @@ export function OrderWizardDrawer({
                       i + 1
                     )}
                   </div>
-                  <span className="ml-2 text-sm">{s.label}</span>
+                  <span className="ml-1.5 text-xs">{s.label}</span>
                   {i < steps.length - 1 && (
-                    <div className="mx-3 h-px w-8 bg-border" />
+                    <div className="mx-2 h-px w-5 bg-border" />
                   )}
                 </div>
               ))}
@@ -269,6 +304,20 @@ export function OrderWizardDrawer({
                 />
               )}
 
+              {step === "sides" && (
+                <SidesStep
+                  availableSides={availableSides}
+                  selectedSides={wizard.sides.selectedSides}
+                  extrasByCategory={extrasByCategory}
+                  onAddSide={wizard.sides.addSide}
+                  onRemoveSide={wizard.sides.removeSide}
+                  onUpdateQuantity={wizard.sides.updateQuantity}
+                  onToggleExpanded={wizard.sides.toggleExpanded}
+                  onToggleExtra={wizard.sides.toggleExtra}
+                  onUpdateExtraQuantity={wizard.sides.updateExtraQuantity}
+                />
+              )}
+
               {step === "summary" && (
                 <SummaryStep
                   isNewCustomer={wizard.customer.isNewCustomer}
@@ -284,6 +333,7 @@ export function OrderWizardDrawer({
                   newAddressData={wizard.customer.newAddressData}
                   selectedBurgers={wizard.burgers.selectedBurgers}
                   selectedCombos={wizard.combos.selectedCombos}
+                  selectedSides={wizard.sides.selectedSides}
                   subtotal={wizard.subtotal}
                   extrasTotal={wizard.extrasTotal}
                   orderTotal={wizard.orderTotal}
@@ -309,19 +359,43 @@ export function OrderWizardDrawer({
             </div>
           </div>
 
+          {/* TOTAL BAR — visible en combos, burgers y sides */}
+          {showTotalBar && (
+            <div className="shrink-0 border-t bg-muted/40 px-6 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Subtotal</span>
+                  {totalItems > 0 && (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                      {totalItems}
+                    </span>
+                  )}
+                </div>
+                <span className="text-base font-semibold text-foreground">
+                  {formatCurrency(wizard.subtotal)}
+                </span>
+              </div>
+              {totalItems > 0 && (
+                <div className="mt-0.5 flex gap-3 text-xs text-muted-foreground">
+                  {totalComboItems > 0 && (
+                    <span>{totalComboItems} combo{totalComboItems > 1 ? "s" : ""}</span>
+                  )}
+                  {totalBurgerItems > 0 && (
+                    <span>{totalBurgerItems} hamburguesa{totalBurgerItems > 1 ? "s" : ""}</span>
+                  )}
+                  {totalSideItems > 0 && (
+                    <span>{totalSideItems} acomp.</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* FOOTER */}
           <div className="shrink-0 flex items-center justify-between border-t px-6 py-4 z-10 bg-background">
             {/* Back Button */}
             {step !== "customer" ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (step === "combos") setStep("customer");
-                  else if (step === "burgers") setStep("combos");
-                  else if (step === "summary") setStep("burgers");
-                }}
-                className="bg-card"
-              >
+              <Button variant="outline" onClick={goBack} className="bg-card">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Atrás
               </Button>
@@ -329,7 +403,7 @@ export function OrderWizardDrawer({
               <div />
             )}
 
-            {/* Paginación de clientes (centro) */}
+            {/* Paginación de clientes */}
             {step === "customer" &&
               !wizard.customer.isNewCustomer &&
               customerTotalPages > 1 && (
@@ -359,7 +433,7 @@ export function OrderWizardDrawer({
             {/* Next/Submit Buttons */}
             {step === "customer" && (
               <Button
-                onClick={() => setStep("combos")}
+                onClick={goNext}
                 disabled={!wizard.canProceedFromCustomer}
               >
                 Siguiente
@@ -368,19 +442,23 @@ export function OrderWizardDrawer({
             )}
 
             {step === "combos" && (
-              <Button
-                onClick={() => setStep("burgers")}
-                disabled={!wizard.canProceedFromCombos}
-              >
+              <Button onClick={goNext} disabled={!wizard.canProceedFromCombos}>
                 Siguiente
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}
 
             {step === "burgers" && (
+              <Button onClick={goNext}>
+                Siguiente
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+
+            {step === "sides" && (
               <Button
-                onClick={() => setStep("summary")}
-                disabled={!wizard.canProceedFromBurgers}
+                onClick={goNext}
+                disabled={!wizard.canProceedFromSides}
               >
                 Siguiente
                 <ArrowRight className="ml-2 h-4 w-4" />
