@@ -7,13 +7,14 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCustomerAddresses } from "@/lib/hooks/use-customers";
-
+import { useEffect } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
 export function CustomerAddressSelect({
   customerId,
   value,
@@ -22,17 +23,26 @@ export function CustomerAddressSelect({
 }: {
   customerId: string;
   value?: string;
-  onChange: (addressId: string) => void;
+  onChange: (addressId: string | undefined) => void;
   isLoading: boolean;
 }) {
   const { data: addresses } = useCustomerAddresses(customerId);
 
-  // 1️⃣ Loading visual controlado desde el padre
+  // Auto-select default address when:
+  // 1. Addresses load for the first time (value is empty)
+  // 2. Customer changes and current value belongs to the previous customer
+  useEffect(() => {
+    if (!addresses || addresses.length === 0) return;
+    const belongsToCurrent = addresses.some((a) => a.id === value);
+    if (belongsToCurrent) return;
+    const defaultAddr = addresses.find((a) => a.is_default) ?? addresses[0];
+    onChange(defaultAddr.id);
+  }, [addresses, customerId]);
+
   if (isLoading) {
     return <Skeleton className="h-3 w-40" />;
   }
 
-  // 2️⃣ Sin direcciones (solo cuando YA terminó de cargar)
   if (!addresses || addresses.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
@@ -41,12 +51,9 @@ export function CustomerAddressSelect({
     );
   }
 
-  const selectedAddress = addresses?.find((a) => a.id === value);
+  const selectedAddress = addresses.find((a) => a.id === value);
   const hasNotes = !!selectedAddress?.notes;
 
-  console.log(hasNotes);
-
-  // 3️⃣ Select normal
   return (
     <div className="flex items-center gap-2">
       <Select value={value} onValueChange={onChange}>

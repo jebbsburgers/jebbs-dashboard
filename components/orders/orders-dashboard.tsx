@@ -34,7 +34,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { usePrintOrder } from "@/lib/hooks/use-print-order";
 import { useOrderForEdit } from "@/lib/hooks/orders/use-order-for-edit";
 import { useQueryClient } from "@tanstack/react-query";
 import type { OrderStatus } from "@/lib/types";
@@ -45,7 +44,6 @@ export function OrdersDashboard() {
   const { data: todayCount } = useTodayOrdersCount();
   const updateStatus = useUpdateOrderStatus();
   const togglePayment = useTogglePaymentStatus();
-  const printOrder = usePrintOrder();
 
   const [orderIdToEdit, setOrderIdToEdit] = useState<string | null>(null);
   const { data: orderToEdit } = useOrderForEdit(orderIdToEdit);
@@ -72,7 +70,7 @@ export function OrdersDashboard() {
     if (!a.delivery_time && !b.delivery_time) return 0;
     if (!a.delivery_time) return 1;
     if (!b.delivery_time) return -1;
-    return b.delivery_time.localeCompare(a.delivery_time);
+    return a.delivery_time.localeCompare(b.delivery_time);
   });
 
   const handleDragStart = (event: any) => {

@@ -2,6 +2,9 @@ import { formatCurrency, formatDateTime } from "@/lib/utils/format";
 import type { Order } from "@/lib/types";
 
 export function formatOrderForWhatsapp(order: Order) {
+
+  console.log(order)
+
   const isDelivery = order.delivery_type === "delivery";
 
   const address = order.customer?.customer_addresses?.find(
