@@ -71,7 +71,7 @@ interface SummaryStepProps {
     }>;
   }>;
 
-  // 🆕 Sides
+  // Sides
   selectedSides: SelectedSide[];
 
   // Totals
@@ -128,6 +128,7 @@ export function SummaryStep({
   discountAmount,
   onDiscountTypeChange,
   onDiscountValueChange,
+  subtotal,
   notes,
   onNotesChange,
   onDeliveryTimeChange,
@@ -139,6 +140,8 @@ export function SummaryStep({
     }
     return selectedAddress !== null;
   }, [isNewCustomer, newAddressData?.address, selectedAddress]);
+
+  const isFullDiscount = orderTotal === 0 && discountType !== "none";
 
   return (
     <div className="space-y-6">
@@ -370,19 +373,33 @@ export function SummaryStep({
                   type="number"
                   min={0}
                   max={discountType === "percentage" ? 100 : undefined}
-                  value={discountValue}
-                  onChange={(e) => onDiscountValueChange(Number(e.target.value))}
+                  // Show empty string when value is 0 so the field starts blank
+                  value={discountValue === 0 ? "" : discountValue}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    // Allow empty field (treat as 0 internally)
+                    onDiscountValueChange(raw === "" ? 0 : Number(raw));
+                  }}
+                  onFocus={(e) => {
+                    // Select all text on focus so typing replaces the value
+                    e.target.select();
+                  }}
                   placeholder={
-                    discountType === "percentage" ? "Ej: 10 (para 10%)" : "Ej: 5000"
+                    discountType === "percentage" ? "Ej: 10" : "Ej: 5000"
                   }
                 />
                 {discountAmount > 0 && (
                   <div className="flex items-center justify-between text-sm rounded-md bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-2">
                     <span className="text-green-900 dark:text-green-100">
                       Descuento aplicado
+                      {isFullDiscount && (
+                        <span className="ml-1 text-xs text-green-700 dark:text-green-300">
+                          (incluye envío)
+                        </span>
+                      )}
                     </span>
                     <span className="font-semibold text-green-700 dark:text-green-300">
-                      -{formatCurrency(discountAmount)}
+                      -{formatCurrency(isFullDiscount ? orderTotal : discountAmount)}
                     </span>
                   </div>
                 )}
@@ -598,7 +615,7 @@ export function SummaryStep({
             );
           })}
 
-          {/* Sides — mismo estilo que burgers/combos */}
+          {/* Sides */}
           {selectedSides.map((item) => {
             const extrasPrice = (item.selectedExtras ?? []).reduce(
               (acc, e) => acc + e.extra.price * e.quantity,
@@ -645,12 +662,21 @@ export function SummaryStep({
                 <span>
                   Descuento{" "}
                   {discountType === "percentage" && `(${discountValue}%)`}
+                  {isFullDiscount && (
+                    <span className="ml-1 text-xs opacity-75">(incl. envío)</span>
+                  )}
                 </span>
-                <span>-{formatCurrency(discountAmount)}</span>
+                <span>-{formatCurrency(isFullDiscount ? orderTotal : discountAmount)}</span>
               </div>
             )}
-            {deliveryType === "delivery" && (
+            {deliveryType === "delivery" && !isFullDiscount && (
               <div className="flex justify-between text-muted-foreground">
+                <span>Envío</span>
+                <span>{formatCurrency(deliveryFee)}</span>
+              </div>
+            )}
+            {deliveryType === "delivery" && isFullDiscount && (
+              <div className="flex justify-between text-muted-foreground line-through opacity-50">
                 <span>Envío</span>
                 <span>{formatCurrency(deliveryFee)}</span>
               </div>

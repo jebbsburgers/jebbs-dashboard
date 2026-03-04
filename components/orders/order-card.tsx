@@ -5,7 +5,7 @@ import type React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Eye, User, DollarSign, Edit, ArrowRight, Copy } from "lucide-react";
+import { Clock, Eye, User, DollarSign, Edit, ArrowRight, Copy, Timer } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
 import { useTogglePaymentStatus } from "@/lib/hooks/orders/use-orders";
@@ -55,8 +55,9 @@ export function OrderCard({
   const status = visualStatus ?? order.status;
   const config = statusConfig[status as keyof typeof statusConfig];
 
+  console.log(order)
+
   return (
-    // ✅ Eliminado "hidden lg:block" — lo maneja el wrapper en SortableOrderCard
     <Card
       className={cn(
         "transition-all hover:shadow-md cursor-grab bg-card",
@@ -64,19 +65,39 @@ export function OrderCard({
       )}
     >
       <CardContent className="p-4">
-        {/* Header */}
+
+        {/* Delivery time banner — shown at the very top when available */}
+        {order.delivery_time && (
+          <div className="flex items-center gap-2 mb-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-1.5">
+            <Timer className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+              {order.delivery_type === "delivery" ? "Entrega:" : "Retira:"} {order.delivery_time}
+            </span>
+          </div>
+        )}
+
+        {/* Header: order number + time ago + status badge + payment */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <p className="font-mono text-lg font-semibold">
               #{order.order_number}
             </p>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
               <span>{getRelativeTime(order.created_at)}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+                       <Button
+              variant="ghost"
+              size="sm"
+              className="cursor-pointer"
+              onClick={handleCopy}
+              title="Copiar para WhatsApp"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
             <Badge className={config.className}>{config.label}</Badge>
             <button
               onClick={handlePaymentToggle}
@@ -97,30 +118,20 @@ export function OrderCard({
           </div>
         </div>
 
-        {/* Info: Cliente */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          <div className="flex items-center gap-1.5">
-            <User className="h-4 w-4" />
-            <span>{order.customer_name}</span>
-          </div>
+        {/* Customer name */}
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
+          <User className="h-4 w-4" />
+          <span>{order.customer_name}</span>
         </div>
 
-        {/* Footer */}
+        {/* Footer: total + actions */}
         <div className="flex items-center justify-between pt-3 border-t">
           <p className="text-2xl font-bold">
             {formatCurrency(order.total_amount)}
           </p>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="cursor-pointer"
-              onClick={handleCopy}
-              title="Copiar para WhatsApp"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
+
 
             {canEdit && onEditOrder && (
               <Button
@@ -149,7 +160,8 @@ export function OrderCard({
           </div>
         </div>
 
-        <div className="mt-8 w-full flex justify-end">
+        {/* Status advance button */}
+        <div className="mt-3 w-full flex justify-end">
           {onChangeStatus &&
             (order.status === "new" || order.status === "ready") && (
               <Button

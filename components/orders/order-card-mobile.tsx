@@ -61,6 +61,17 @@ export function OrderCardMobile({
           </p>
 
           <div className="flex items-center gap-2">
+            
+          <Button
+            size="sm"
+            variant="outline"
+            className="bg-card"
+            onClick={handleCopy}
+            title="Copiar para WhatsApp"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+
             <button
               onClick={handlePaymentToggle}
               className={cn(
@@ -95,16 +106,7 @@ export function OrderCardMobile({
         </div>
 
         {/* BOTONES */}
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 bg-card"
-            onClick={() => onViewDetails(order)}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            Ver detalles
-          </Button>
+        <div className="flex gap-2 border-t pt-3">
 
           {canEdit && onEditOrder && (
             <Button
@@ -120,12 +122,12 @@ export function OrderCardMobile({
 
           <Button
             size="sm"
-            variant="outline"
-            className="bg-card"
-            onClick={handleCopy}
-            title="Copiar para WhatsApp"
+            variant="default"
+            className="flex-1"
+            onClick={() => onViewDetails(order)}
           >
-            <Copy className="h-4 w-4" />
+            <Eye className="mr-2 h-4 w-4" />
+            Ver detalles
           </Button>
         </div>
 

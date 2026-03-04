@@ -92,6 +92,15 @@ export function OrderWizardDrawer({
     allExtras: extras || [],
   });
 
+  // ================= RESET AL ABRIR (solo en create) =================
+  useEffect(() => {
+    if (open && mode === "create") {
+      wizard.resetAll();
+      setStep("customer");
+      setCustomerPage(1);
+    }
+  }, [open]);
+
   // ================= CUSTOMER ADDRESSES =================
   const { data: customerAddresses, isLoading: isLoadingAddresses } =
     useCustomerAddresses(wizard.customer.selectedCustomer?.id);
@@ -134,14 +143,12 @@ export function OrderWizardDrawer({
   );
   const totalItems = totalBurgerItems + totalComboItems + totalSideItems;
 
-  // Mostrar barra de total en steps intermedios
   const showTotalBar =
     step === "combos" || step === "burgers" || step === "sides";
 
   // ================= HANDLERS =================
   const handleClose = (open: boolean) => {
     if (!open) {
-      wizard.resetAll();
       setStep("customer");
       setCustomerPage(1);
     }
@@ -155,6 +162,20 @@ export function OrderWizardDrawer({
 
   const handleEditCustomer = () => {
     wizard.customer.setIsEditingCustomer(true);
+  };
+
+  // 🔑 FIX: When toggling to "new customer", clear the previously selected
+  // existing customer so the submit doesn't use stale selectedCustomer data.
+  const handleToggleNewCustomer = (isNew: boolean) => {
+    wizard.customer.setIsNewCustomer(isNew);
+    if (isNew) {
+      wizard.customer.setSelectedCustomer(null);
+      wizard.customer.setSelectedAddress(undefined);
+    } else {
+      // Switching back to existing: clear new customer form data
+      wizard.customer.setNewCustomerData({ name: "", phone: "" });
+      wizard.customer.setNewAddressData({ label: "", address: "", notes: "" });
+    }
   };
 
   // ================= STEP DEFINITIONS =================
@@ -238,7 +259,7 @@ export function OrderWizardDrawer({
                   selectedCustomer={wizard.customer.selectedCustomer}
                   onSelectCustomer={wizard.customer.setSelectedCustomer}
                   isNewCustomer={wizard.customer.isNewCustomer}
-                  onToggleNewCustomer={wizard.customer.setIsNewCustomer}
+                  onToggleNewCustomer={handleToggleNewCustomer}
                   newCustomerData={wizard.customer.newCustomerData}
                   onNewCustomerDataChange={wizard.customer.setNewCustomerData}
                   newAddressData={wizard.customer.newAddressData}
@@ -359,7 +380,7 @@ export function OrderWizardDrawer({
             </div>
           </div>
 
-          {/* TOTAL BAR — visible en combos, burgers y sides */}
+          {/* TOTAL BAR */}
           {showTotalBar && (
             <div className="shrink-0 border-t bg-muted/40 px-6 py-3">
               <div className="flex items-center justify-between">
@@ -393,7 +414,6 @@ export function OrderWizardDrawer({
 
           {/* FOOTER */}
           <div className="shrink-0 flex items-center justify-between border-t px-6 py-4 z-10 bg-background">
-            {/* Back Button */}
             {step !== "customer" ? (
               <Button variant="outline" onClick={goBack} className="bg-card">
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -403,7 +423,6 @@ export function OrderWizardDrawer({
               <div />
             )}
 
-            {/* Paginación de clientes */}
             {step === "customer" &&
               !wizard.customer.isNewCustomer &&
               customerTotalPages > 1 && (
@@ -430,12 +449,8 @@ export function OrderWizardDrawer({
                 </div>
               )}
 
-            {/* Next/Submit Buttons */}
             {step === "customer" && (
-              <Button
-                onClick={goNext}
-                disabled={!wizard.canProceedFromCustomer}
-              >
+              <Button onClick={goNext} disabled={!wizard.canProceedFromCustomer}>
                 Siguiente
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -456,10 +471,7 @@ export function OrderWizardDrawer({
             )}
 
             {step === "sides" && (
-              <Button
-                onClick={goNext}
-                disabled={!wizard.canProceedFromSides}
-              >
+              <Button onClick={goNext} disabled={!wizard.canProceedFromSides}>
                 Siguiente
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

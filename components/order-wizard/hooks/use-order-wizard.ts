@@ -54,7 +54,6 @@ export function useOrderWizard({
   // ================= COMPUTED =================
 
   const subtotal = useMemo(() => {
-    // ✅ calculateSubtotal ya maneja burgers + combos + sides (incluyendo selectedExtras)
     return OrderPriceCalculator.calculateSubtotal(
       burgers.selectedBurgers,
       combos.selectedCombos,
@@ -79,8 +78,7 @@ export function useOrderWizard({
   }, [subtotal, settings.discountType, settings.discountValue]);
 
   const orderTotal = useMemo(() => {
-    // ✅ calculateOrderTotal ya maneja todo (burgers + combos + sides + descuento + delivery)
-    return OrderPriceCalculator.calculateOrderTotal({
+    const raw = OrderPriceCalculator.calculateOrderTotal({
       selectedBurgers: burgers.selectedBurgers,
       selectedCombos: combos.selectedCombos,
       selectedSides: sides.selectedSides,
@@ -91,6 +89,13 @@ export function useOrderWizard({
       discountType: settings.discountType,
       discountValue: settings.discountValue,
     });
+
+    // Si el descuento es 100%, el total es 0 (incluye delivery fee)
+    if (settings.discountType === "percentage" && settings.discountValue >= 100) {
+      return 0;
+    }
+
+    return raw;
   }, [
     burgers.selectedBurgers,
     combos.selectedCombos,
@@ -215,7 +220,11 @@ export function useOrderWizard({
         payment_method: settings.paymentMethod,
         discount_type: settings.discountType,
         discount_value: settings.discountValue,
-        discount_amount: discountAmount,
+        // 🔑 FIX: discount_amount guardado en DB también refleja el total real
+        // (incluye delivery fee cuando el descuento es 100%)
+        discount_amount: orderTotal === 0
+          ? subtotal + (settings.deliveryType === "delivery" ? settings.deliveryFee : 0)
+          : discountAmount,
         items: allItems,
         notes: settings.notes || null,
         delivery_time: settings.deliveryTime || null,

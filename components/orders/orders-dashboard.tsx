@@ -67,8 +67,16 @@ export function OrdersDashboard() {
     }
   }, [orderToEdit, orderIdToEdit]);
 
+  // Sort orders by delivery_time ascending (earliest first, null/empty last)
+  const sortedOrders = [...(orders ?? [])].sort((a, b) => {
+    if (!a.delivery_time && !b.delivery_time) return 0;
+    if (!a.delivery_time) return 1;
+    if (!b.delivery_time) return -1;
+    return b.delivery_time.localeCompare(a.delivery_time);
+  });
+
   const handleDragStart = (event: any) => {
-    const order = orders?.find((o) => o.id === event.active.id);
+    const order = sortedOrders.find((o) => o.id === event.active.id);
     setActiveOrder(order || null);
   };
 
@@ -83,7 +91,6 @@ export function OrdersDashboard() {
     const orderId = active.id as string;
     const newStatus = over.id as OrderStatus;
 
-    // 🆕 CRÍTICO: Update optimista INMEDIATO antes de limpiar activeOrder
     queryClient.setQueryData<Order[]>(["orders"], (old) => {
       if (!old) return old;
       return old.map((order) =>
@@ -97,10 +104,7 @@ export function OrdersDashboard() {
       );
     });
 
-    // LUEGO limpiar activeOrder
     setActiveOrder(null);
-
-    // Y finalmente ejecutar la mutación en background
     updateStatus.mutate({ orderId, status: newStatus });
   };
 
@@ -147,11 +151,11 @@ export function OrdersDashboard() {
     if (order.status === "new") {
       updateStatus.mutate({ orderId: order.id, status: "ready" });
     } else if (order.status === "ready") {
-      handleCompleteOrder(order); // reutiliza el flujo de pago
+      handleCompleteOrder(order);
     }
   };
 
-  const readyOrders = orders?.filter((o) => o.status === "ready") ?? [];
+  const readyOrders = sortedOrders.filter((o) => o.status === "ready");
 
   return (
     <section className="flex flex-1 flex-col min-h-0">
@@ -176,7 +180,7 @@ export function OrdersDashboard() {
                 </div>
               ))}
             </div>
-          ) : orders && orders.length > 0 ? (
+          ) : sortedOrders && sortedOrders.length > 0 ? (
             <div className="flex-1 min-h-0 flex h-full">
               <DndContext
                 sensors={sensors}
@@ -188,25 +192,25 @@ export function OrdersDashboard() {
                     <OrderColumn
                       title="Nuevos"
                       status="new"
-                      orders={orders ?? []}
+                      orders={sortedOrders}
                       onViewDetails={(o) => {
                         setSelectedOrder(o);
                         setDetailsOpen(true);
                       }}
                       onEditOrder={handleEditOrder}
-                      onChangeStatus={handleChangeStatus} // 👈
+                      onChangeStatus={handleChangeStatus}
                       accentColor="bg-blue-500"
                     />
                     <OrderColumn
                       title="Listos"
                       status="ready"
-                      orders={orders ?? []}
+                      orders={sortedOrders}
                       onViewDetails={(o) => {
                         setSelectedOrder(o);
                         setDetailsOpen(true);
                       }}
                       onEditOrder={handleEditOrder}
-                      onChangeStatus={handleChangeStatus} // 👈
+                      onChangeStatus={handleChangeStatus}
                       accentColor="bg-green-500"
                     />
                   </div>

@@ -27,7 +27,7 @@ export function useOrderSettings() {
   const reset = () => {
     setDeliveryType("delivery");
     setDeliveryFee(2000);
-    setPaymentMethod("cash");
+    setPaymentMethod("transfer");
     setDiscountType("none");
     setDiscountValue(0);
     setNotes("");
