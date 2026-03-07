@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useCustomerSelection } from "./use-customer-selection";
 import { useBurgerSelection } from "./use-burger-selection";
 import { useComboSelection } from "./use-combo-selection";
@@ -38,6 +38,8 @@ export function useOrderWizard({
   allCombos = [],
   allExtras = [],
 }: UseOrderWizardParams) {
+  const isSubmittingRef = useRef(false);
+
   // ================= HOOKS =================
   const customer = useCustomerSelection();
   const burgers = useBurgerSelection(meatExtra);
@@ -91,7 +93,10 @@ export function useOrderWizard({
     });
 
     // Si el descuento es 100%, el total es 0 (incluye delivery fee)
-    if (settings.discountType === "percentage" && settings.discountValue >= 100) {
+    if (
+      settings.discountType === "percentage" &&
+      settings.discountValue >= 100
+    ) {
       return 0;
     }
 
@@ -168,6 +173,8 @@ export function useOrderWizard({
   // ================= ACTIONS =================
 
   const handleSubmit = async () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     try {
       const allItems: OrderItemInput[] =
         OrderDataTransformer.transformToOrderPayload(
@@ -198,7 +205,8 @@ export function useOrderWizard({
         settings.deliveryType === "delivery" &&
         mode === "create"
       ) {
-        if (!customerId) throw new Error("Customer ID is required to create address");
+        if (!customerId)
+          throw new Error("Customer ID is required to create address");
         const address = await createCustomerAddress.mutateAsync({
           customerId,
           address: customer.newAddressData.address,
@@ -222,9 +230,11 @@ export function useOrderWizard({
         discount_value: settings.discountValue,
         // 🔑 FIX: discount_amount guardado en DB también refleja el total real
         // (incluye delivery fee cuando el descuento es 100%)
-        discount_amount: orderTotal === 0
-          ? subtotal + (settings.deliveryType === "delivery" ? settings.deliveryFee : 0)
-          : discountAmount,
+        discount_amount:
+          orderTotal === 0
+            ? subtotal +
+              (settings.deliveryType === "delivery" ? settings.deliveryFee : 0)
+            : discountAmount,
         items: allItems,
         notes: settings.notes || null,
         delivery_time: settings.deliveryTime || null,
@@ -251,6 +261,8 @@ export function useOrderWizard({
     } catch (error) {
       console.error("Error en submit:", error);
       throw error;
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 

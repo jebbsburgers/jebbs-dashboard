@@ -4,7 +4,15 @@ import type React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Eye, Edit, User, DollarSign, ArrowRight, Copy } from "lucide-react";
+import {
+  Clock,
+  Eye,
+  Edit,
+  User,
+  DollarSign,
+  ArrowRight,
+  Copy,
+} from "lucide-react";
 import type { Order } from "@/lib/types";
 import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
 import { useTogglePaymentStatus } from "@/lib/hooks/orders/use-orders";
@@ -61,16 +69,15 @@ export function OrderCardMobile({
           </p>
 
           <div className="flex items-center gap-2">
-            
-          <Button
-            size="sm"
-            variant="outline"
-            className="bg-card"
-            onClick={handleCopy}
-            title="Copiar para WhatsApp"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-card"
+              onClick={handleCopy}
+              title="Copiar para WhatsApp"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
 
             <button
               onClick={handlePaymentToggle}
@@ -107,7 +114,6 @@ export function OrderCardMobile({
 
         {/* BOTONES */}
         <div className="flex gap-2 border-t pt-3">
-
           {canEdit && onEditOrder && (
             <Button
               size="sm"
@@ -134,7 +140,14 @@ export function OrderCardMobile({
         {/* Cambiar estado */}
         {onChangeStatus &&
           (order.status === "new" || order.status === "ready") && (
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              <div>
+                {order.payment_method === "cash" && (
+                  <Badge variant="outline" className="text-xs gap-1 bg-card">
+                    💵 Efectivo
+                  </Badge>
+                )}
+              </div>
               <Button
                 size="sm"
                 variant="outline"

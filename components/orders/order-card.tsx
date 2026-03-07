@@ -5,7 +5,16 @@ import type React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Eye, User, DollarSign, Edit, ArrowRight, Copy, Timer } from "lucide-react";
+import {
+  Clock,
+  Eye,
+  User,
+  DollarSign,
+  Edit,
+  ArrowRight,
+  Copy,
+  Timer,
+} from "lucide-react";
 import type { Order } from "@/lib/types";
 import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
 import { useTogglePaymentStatus } from "@/lib/hooks/orders/use-orders";
@@ -55,7 +64,7 @@ export function OrderCard({
   const status = visualStatus ?? order.status;
   const config = statusConfig[status as keyof typeof statusConfig];
 
-  console.log(order)
+  console.log(order);
 
   return (
     <Card
@@ -65,13 +74,13 @@ export function OrderCard({
       )}
     >
       <CardContent className="p-4">
-
         {/* Delivery time banner — shown at the very top when available */}
         {order.delivery_time && (
           <div className="flex items-center gap-2 mb-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-1.5">
             <Timer className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-              {order.delivery_type === "delivery" ? "Entrega:" : "Retira:"} {order.delivery_time}
+              {order.delivery_type === "delivery" ? "Entrega:" : "Retira:"}{" "}
+              {order.delivery_time}
             </span>
           </div>
         )}
@@ -89,7 +98,7 @@ export function OrderCard({
           </div>
 
           <div className="flex items-center gap-2">
-                       <Button
+            <Button
               variant="ghost"
               size="sm"
               className="cursor-pointer"
@@ -131,8 +140,6 @@ export function OrderCard({
           </p>
 
           <div className="flex items-center gap-2">
-
-
             {canEdit && onEditOrder && (
               <Button
                 variant="ghost"
@@ -161,7 +168,14 @@ export function OrderCard({
         </div>
 
         {/* Status advance button */}
-        <div className="mt-3 w-full flex justify-end">
+        <div className="mt-3 w-full flex items-center justify-between">
+          <div>
+            {order.payment_method === "cash" && (
+              <Badge variant="outline" className="text-xs gap-1 bg-card">
+                💵 Efectivo
+              </Badge>
+            )}
+          </div>
           {onChangeStatus &&
             (order.status === "new" || order.status === "ready") && (
               <Button

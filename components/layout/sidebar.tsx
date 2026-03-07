@@ -10,6 +10,7 @@ import {
   Plus,
   DollarSign,
   Component,
+  User,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ const navigation = [
   { name: "Pedidos", href: "/", icon: LayoutDashboard },
   { name: "Historial", href: "/orders", icon: ClipboardList },
   { name: "Rendimiento", href: "/analytics", icon: BarChart3 },
+  { name: "Clientes", href: "/clientes", icon: User },
   { name: "Menú", href: "/menu", icon: UtensilsCrossed },
   { name: "Combos", href: "/combos", icon: Component },
   { name: "Extras", href: "/extras", icon: Plus },

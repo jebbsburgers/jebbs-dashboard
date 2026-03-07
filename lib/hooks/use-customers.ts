@@ -5,23 +5,35 @@ import { createClient } from "../supabase/client";
 
 interface CreateCustomerInput {
   name: string;
-  phone?: string;
+  phone?: string | null;
+  address?: {
+    label: string;
+    address: string;
+    notes: string | null;
+  };
 }
 
 /* =========================
    Addresses
 ========================= */
-export function useCustomers() {
+export function useCustomers(search?: string) {
   const supabase = createClient();
 
   return useQuery({
-    queryKey: ["customers"],
+    queryKey: ["customers", search],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("customers")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("name", { ascending: true }); // alfabético
 
+      if (search?.trim()) {
+        query = query.or(
+          `name.ilike.%${search.trim()}%,phone.ilike.%${search.trim()}%`,
+        );
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -36,14 +48,27 @@ export function useCreateCustomer() {
     mutationFn: async (input: CreateCustomerInput) => {
       const { data, error } = await supabase
         .from("customers")
-        .insert({
-          name: input.name,
-          phone: input.phone ?? null,
-        })
+        .insert({ name: input.name, phone: input.phone ?? null })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Si viene con dirección, la crea también
+      if (input.address?.address) {
+        const { error: addrError } = await supabase
+          .from("customer_addresses")
+          .insert({
+            customer_id: data.id,
+            label: input.address.label || "Principal",
+            address: input.address.address,
+            notes: input.address.notes ?? null,
+            is_default: true,
+          });
+
+        if (addrError) throw addrError;
+      }
+
       return data;
     },
 

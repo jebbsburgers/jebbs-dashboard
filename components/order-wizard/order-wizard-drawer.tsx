@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -46,6 +46,8 @@ export function OrderWizardDrawer({
 }: OrderWizardDrawerProps) {
   const [step, setStep] = useState<WizardStep>("customer");
   const [customerPage, setCustomerPage] = useState(1);
+
+  const isSubmittingRef = useRef(false);
 
   // ================= DATA LOADING =================
   const { data: customers } = useCustomers();
@@ -156,8 +158,14 @@ export function OrderWizardDrawer({
   };
 
   const handleSubmit = async () => {
-    await wizard.handleSubmit();
-    handleClose(false);
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
+      await wizard.handleSubmit();
+      handleClose(false);
+    } finally {
+      isSubmittingRef.current = false;
+    }
   };
 
   const handleEditCustomer = () => {
@@ -399,14 +407,17 @@ export function OrderWizardDrawer({
               {totalItems > 0 && (
                 <div className="mt-0.5 flex gap-3 text-xs text-muted-foreground">
                   {totalComboItems > 0 && (
-                    <span>{totalComboItems} combo{totalComboItems > 1 ? "s" : ""}</span>
+                    <span>
+                      {totalComboItems} combo{totalComboItems > 1 ? "s" : ""}
+                    </span>
                   )}
                   {totalBurgerItems > 0 && (
-                    <span>{totalBurgerItems} hamburguesa{totalBurgerItems > 1 ? "s" : ""}</span>
+                    <span>
+                      {totalBurgerItems} hamburguesa
+                      {totalBurgerItems > 1 ? "s" : ""}
+                    </span>
                   )}
-                  {totalSideItems > 0 && (
-                    <span>{totalSideItems} acomp.</span>
-                  )}
+                  {totalSideItems > 0 && <span>{totalSideItems} acomp.</span>}
                 </div>
               )}
             </div>
@@ -450,7 +461,10 @@ export function OrderWizardDrawer({
               )}
 
             {step === "customer" && (
-              <Button onClick={goNext} disabled={!wizard.canProceedFromCustomer}>
+              <Button
+                onClick={goNext}
+                disabled={!wizard.canProceedFromCustomer}
+              >
                 Siguiente
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
