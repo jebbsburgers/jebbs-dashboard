@@ -6,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,16 +19,19 @@ import {
   TrendingUp,
   ShoppingBag,
   DollarSign,
-  Calendar,
+  CalendarIcon,
   Receipt,
   Trophy,
   Medal,
   XCircle,
+  UtensilsCrossed,
 } from "lucide-react";
+import type { DateRange } from "react-day-picker";
 import {
   useOrdersAnalytics,
   useMonthlyComparison,
   useTopBurgers,
+  useProductStats,
 } from "@/lib/hooks/orders/use-orders-history";
 import { formatCurrency } from "@/lib/utils/format";
 import {
@@ -42,10 +51,15 @@ import {
 
 const TZ = "America/Argentina/Buenos_Aires";
 
-type ViewMode = "month" | "week";
+type ViewMode = "month" | "week" | "custom";
 
 // Get display label for current period
-function getPeriodLabel(date: Date, mode: ViewMode): string {
+function getPeriodLabel(date: Date, mode: ViewMode, customRange?: { from: Date; to: Date }): string {
+  if (mode === "custom" && customRange) {
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric", timeZone: TZ });
+    return `${fmt(customRange.from)} – ${fmt(customRange.to)}`;
+  }
   if (mode === "month") {
     return date.toLocaleDateString("es-AR", {
       month: "long",
@@ -120,16 +134,28 @@ const RANK_CONFIG = [
 export default function AnalyticsPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [customRange, setCustomRange] = useState<{ from: Date; to: Date } | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarSelection, setCalendarSelection] = useState<DateRange | undefined>(undefined);
+
+  const resolvedCustomRange = viewMode === "custom" ? customRange : undefined;
 
   const { data: analytics, isLoading: analyticsLoading } = useOrdersAnalytics(
     selectedDate,
-    viewMode
+    viewMode,
+    resolvedCustomRange
   );
   const { data: monthlyComparison, isLoading: comparisonLoading } =
     useMonthlyComparison();
   const { data: topBurgers, isLoading: burgersLoading } = useTopBurgers(
     selectedDate,
-    viewMode
+    viewMode,
+    resolvedCustomRange
+  );
+  const { data: productStats, isLoading: productStatsLoading } = useProductStats(
+    selectedDate,
+    viewMode,
+    resolvedCustomRange
   );
 
   const handlePrev = () =>
@@ -161,7 +187,7 @@ export default function AnalyticsPage() {
       value: analytics?.avgOrdersPerDay || 0,
       change: analytics?.avgOrdersPerDayChange || 0,
       format: (v: number) => v.toFixed(1),
-      icon: Calendar,
+      icon: CalendarIcon,
       color: "var(--color-chart-3)",
       invertChange: false,
     },
@@ -185,7 +211,7 @@ export default function AnalyticsPage() {
     },
   ];
 
-  const periodLabel = getPeriodLabel(selectedDate, viewMode);
+  const periodLabel = getPeriodLabel(selectedDate, viewMode, customRange);
 
   const ordersChartConfig = {
     orders: { label: "Pedidos", color: "var(--color-chart-1)" },
@@ -232,30 +258,66 @@ export default function AnalyticsPage() {
             >
               Semana
             </Button>
+            <Button
+              variant={viewMode === "custom" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-lg h-8 px-4 text-sm"
+              onClick={() => setViewMode("custom")}
+            >
+              Custom
+            </Button>
           </div>
 
-          {/* Navigation */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handlePrev}
-              className="bg-card h-9 w-9"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="min-w-52 text-center text-sm font-medium capitalize tabular-nums">
-              {periodLabel}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleNext}
-              className="bg-card h-9 w-9"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          {/* Navigation or custom date picker */}
+          {viewMode === "custom" ? (
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="bg-card h-9 gap-2 text-sm font-medium">
+                  <CalendarIcon className="h-4 w-4" />
+                  {customRange
+                    ? periodLabel
+                    : "Elegir rango de fechas"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  selected={calendarSelection}
+                  onSelect={(range) => {
+                    setCalendarSelection(range);
+                    if (range?.from && range?.to) {
+                      setCustomRange({ from: range.from, to: range.to });
+                      setCalendarOpen(false);
+                    }
+                  }}
+                  numberOfMonths={2}
+                  disabled={{ after: new Date() }}
+                />
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handlePrev}
+                className="bg-card h-9 w-9"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-52 text-center text-sm font-medium capitalize tabular-nums">
+                {periodLabel}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleNext}
+                className="bg-card h-9 w-9"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Metrics cards */}
@@ -286,7 +348,7 @@ export default function AnalyticsPage() {
                           style={{ color: metric.color }}
                         />
                       </div>
-                      <div
+                      {viewMode !== "custom" && <div
                         className={`flex items-center gap-0.5 text-xs ${
                           isPositive
                             ? "text-[var(--status-paid)]"
@@ -299,7 +361,7 @@ export default function AnalyticsPage() {
                           <TrendingDown className="h-3 w-3" />
                         )}
                         <span>{Math.abs(metric.change).toFixed(1)}%</span>
-                      </div>
+                      </div>}
                     </div>
                     <p className="text-xl font-bold leading-tight">
                       {metric.format(metric.value)}
@@ -313,6 +375,43 @@ export default function AnalyticsPage() {
             })}
           </div>
         )}
+
+        {/* Product stats */}
+        <Card className="mt-4 ios-glass bg-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+              Unidades vendidas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {productStatsLoading ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-20" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { label: "Burgers", value: productStats?.totalBurgers ?? 0, emoji: "🍔" },
+                  { label: "Medallones", value: productStats?.totalMedallones ?? 0, emoji: "🥩" },
+                  { label: "Fritas", value: productStats?.totalFries ?? 0, emoji: "🍟" },
+                  { label: "Acompañamientos", value: productStats?.totalSides ?? 0, emoji: "🥔" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex flex-col items-center justify-center gap-1 rounded-xl border bg-muted/30 px-4 py-4 text-center"
+                  >
+                    <span className="text-2xl leading-none">{item.emoji}</span>
+                    <span className="text-2xl font-bold tabular-nums">{item.value}</span>
+                    <span className="text-xs text-muted-foreground">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charts */}
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -446,7 +545,7 @@ export default function AnalyticsPage() {
                 Hall of Fame — Más vendidas
               </CardTitle>
               <Badge variant="secondary" className="text-xs">
-                {viewMode === "month" ? "Este mes" : "Esta semana"}
+                {viewMode === "custom" ? periodLabel : viewMode === "month" ? "Este mes" : "Esta semana"}
               </Badge>
             </div>
           </CardHeader>

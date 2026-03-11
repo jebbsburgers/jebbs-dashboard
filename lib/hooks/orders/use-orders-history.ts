@@ -44,7 +44,7 @@ function getWeekRange(date: Date): { start: Date; end: Date } {
   return { start: arDateToUTC(fmt(monday), false), end: arDateToUTC(fmt(sunday), true) };
 }
 
-export type ViewMode = "month" | "week";
+export type ViewMode = "month" | "week" | "custom";
 
 // ─── useOrdersHistory ───────────────────────────────────────────────────────
 
@@ -106,21 +106,33 @@ export function useOrdersHistory(dateRange: { from: Date; to: Date }) {
 
 export function useOrdersAnalytics(
   selectedDate: Date,
-  viewMode: ViewMode = "month"
+  viewMode: ViewMode = "month",
+  customRange?: { from: Date; to: Date }
 ) {
   const supabase = createClient();
 
   return useQuery({
-    queryKey: ["orders-analytics", selectedDate.toISOString(), viewMode],
+    queryKey: ["orders-analytics", selectedDate.toISOString(), viewMode, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async () => {
-      const { start, end } =
-        viewMode === "week"
-          ? getWeekRange(selectedDate)
-          : getMonthRange(selectedDate);
+      let start: Date, end: Date;
+      if (viewMode === "custom" && customRange) {
+        const fromStr = customRange.from.toLocaleDateString("en-CA", { timeZone: TZ });
+        const toStr = customRange.to.toLocaleDateString("en-CA", { timeZone: TZ });
+        start = arDateToUTC(fromStr, false);
+        end = arDateToUTC(toStr, true);
+      } else if (viewMode === "week") {
+        ({ start, end } = getWeekRange(selectedDate));
+      } else {
+        ({ start, end } = getMonthRange(selectedDate));
+      }
 
       // Previous period
       let prevStart: Date, prevEnd: Date;
-      if (viewMode === "week") {
+      if (viewMode === "custom" && customRange) {
+        const duration = end.getTime() - start.getTime();
+        prevEnd = new Date(start.getTime() - 1);
+        prevStart = new Date(prevEnd.getTime() - duration);
+      } else if (viewMode === "week") {
         const ms7 = 7 * 24 * 60 * 60 * 1000;
         prevStart = new Date(start.getTime() - ms7);
         prevEnd = new Date(end.getTime() - ms7);
@@ -296,17 +308,25 @@ export interface TopBurger {
 
 export function useTopBurgers(
   selectedDate: Date,
-  viewMode: ViewMode = "month"
+  viewMode: ViewMode = "month",
+  customRange?: { from: Date; to: Date }
 ) {
   const supabase = createClient();
 
   return useQuery({
-    queryKey: ["top-burgers", selectedDate.toISOString(), viewMode],
+    queryKey: ["top-burgers", selectedDate.toISOString(), viewMode, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
     queryFn: async (): Promise<TopBurger[]> => {
-      const { start, end } =
-        viewMode === "week"
-          ? getWeekRange(selectedDate)
-          : getMonthRange(selectedDate);
+      let start: Date, end: Date;
+      if (viewMode === "custom" && customRange) {
+        const fromStr = customRange.from.toLocaleDateString("en-CA", { timeZone: TZ });
+        const toStr = customRange.to.toLocaleDateString("en-CA", { timeZone: TZ });
+        start = arDateToUTC(fromStr, false);
+        end = arDateToUTC(toStr, true);
+      } else if (viewMode === "week") {
+        ({ start, end } = getWeekRange(selectedDate));
+      } else {
+        ({ start, end } = getMonthRange(selectedDate));
+      }
 
       // Completed order IDs in range
       const { data: orders, error: ordersError } = await supabase
@@ -370,6 +390,102 @@ export function useTopBurgers(
         .sort((a, b) => b.totalSold - a.totalSold)
         .slice(0, 5)
         .map((b, i) => ({ ...b, rank: i + 1 }));
+    },
+  });
+}
+
+// ─── useProductStats ─────────────────────────────────────────────────────────
+
+export interface ProductStats {
+  totalBurgers: number;
+  totalMedallones: number;
+  totalFries: number;
+  totalSides: number;
+}
+
+export function useProductStats(
+  selectedDate: Date,
+  viewMode: ViewMode = "month",
+  customRange?: { from: Date; to: Date }
+) {
+  const supabase = createClient();
+
+  return useQuery({
+    queryKey: ["product-stats", selectedDate.toISOString(), viewMode, customRange?.from?.toISOString(), customRange?.to?.toISOString()],
+    queryFn: async (): Promise<ProductStats> => {
+      let start: Date, end: Date;
+      if (viewMode === "custom" && customRange) {
+        const fromStr = customRange.from.toLocaleDateString("en-CA", { timeZone: TZ });
+        const toStr = customRange.to.toLocaleDateString("en-CA", { timeZone: TZ });
+        start = arDateToUTC(fromStr, false);
+        end = arDateToUTC(toStr, true);
+      } else if (viewMode === "week") {
+        ({ start, end } = getWeekRange(selectedDate));
+      } else {
+        ({ start, end } = getMonthRange(selectedDate));
+      }
+
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("status", "completed")
+        .gte("updated_at", start.toISOString())
+        .lte("updated_at", end.toISOString());
+
+      if (ordersError) throw ordersError;
+      if (!orders || orders.length === 0)
+        return { totalBurgers: 0, totalMedallones: 0, totalFries: 0, totalSides: 0 };
+
+      const orderIds = orders.map((o) => o.id);
+
+      const { data: items, error: itemsError } = await supabase
+        .from("order_items")
+        .select("id, quantity, burger_id, extra_id, combo_id, burgers(default_meat_quantity, default_fries_quantity), extras(category)")
+        .in("order_id", orderIds);
+
+      if (itemsError) throw itemsError;
+
+      let totalBurgers = 0, totalMedallones = 0, totalFries = 0, totalSides = 0;
+
+      for (const item of items ?? []) {
+        if (item.extra_id) {
+          // Standalone extra item (fries, sides, etc. ordered as main item)
+          const extra = item.extras as unknown as { category: string } | null;
+          const category = extra?.category;
+          if (category === "extra") totalMedallones += item.quantity;
+          else if (category === "fries") totalFries += item.quantity;
+          else if (category === "sides") totalSides += item.quantity;
+        } else if (!item.combo_id) {
+          // Burger item: anything that is not a standalone extra or a combo
+          // (burger_id can be null if the burger was deleted from the menu)
+          const burger = item.burgers as unknown as { default_meat_quantity: number; default_fries_quantity: number } | null;
+          totalBurgers += item.quantity;
+          totalMedallones += item.quantity * (burger?.default_meat_quantity ?? 2);
+          totalFries += item.quantity * Number(burger?.default_fries_quantity ?? 1);
+        }
+      }
+
+      const orderItemIds = items?.map((i) => i.id) ?? [];
+      if (!orderItemIds.length)
+        return { totalBurgers, totalMedallones, totalFries, totalSides };
+
+      const { data: extraItems, error: extrasError } = await supabase
+        .from("order_item_extras")
+        .select("quantity, extras(category)")
+        .in("order_item_id", orderItemIds);
+
+      if (extrasError) throw extrasError;
+
+      // Add extras added on top of burgers
+      for (const item of extraItems ?? []) {
+        const extras = item.extras as unknown as { category: string } | { category: string }[] | null;
+        const category = Array.isArray(extras) ? extras[0]?.category : extras?.category;
+        if (category === "extra") totalMedallones += item.quantity;
+        else if (category === "fries") totalFries += item.quantity;
+        else if (category === "sides") totalSides += item.quantity;
+      }
+
+      return { totalBurgers, totalMedallones, totalFries, totalSides };
     },
   });
 }
