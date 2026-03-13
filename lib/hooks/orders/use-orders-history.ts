@@ -186,9 +186,9 @@ export function useOrdersAnalytics(
 
       const msPerDay = 1000 * 60 * 60 * 24;
       const daysInPeriod =
-        Math.round((end.getTime() - start.getTime()) / msPerDay) + 1;
+        Math.round((end.getTime() - start.getTime()) / msPerDay);
       const daysInPrev =
-        Math.round((prevEnd.getTime() - prevStart.getTime()) / msPerDay) + 1;
+        Math.round((prevEnd.getTime() - prevStart.getTime()) / msPerDay);
 
       const avgOrdersPerDay = currentCompleted / daysInPeriod;
       const prevAvgOrdersPerDay = prevCompleted / daysInPrev;
@@ -401,6 +401,7 @@ export interface ProductStats {
   totalMedallones: number;
   totalFries: number;
   totalSides: number;
+  totalCombos: number;
 }
 
 export function useProductStats(
@@ -434,7 +435,7 @@ export function useProductStats(
 
       if (ordersError) throw ordersError;
       if (!orders || orders.length === 0)
-        return { totalBurgers: 0, totalMedallones: 0, totalFries: 0, totalSides: 0 };
+        return { totalBurgers: 0, totalMedallones: 0, totalFries: 0, totalSides: 0, totalCombos: 0 };
 
       const orderIds = orders.map((o) => o.id);
 
@@ -445,7 +446,7 @@ export function useProductStats(
 
       if (itemsError) throw itemsError;
 
-      let totalBurgers = 0, totalMedallones = 0, totalFries = 0, totalSides = 0;
+      let totalBurgers = 0, totalMedallones = 0, totalFries = 0, totalSides = 0, totalCombos = 0;
 
       for (const item of items ?? []) {
         if (item.extra_id) {
@@ -457,6 +458,7 @@ export function useProductStats(
           else if (category === "sides") totalSides += item.quantity;
         } else if (item.combo_id) {
           // Combo item — parse customizations JSON to get per-burger meatCount and friesQuantity
+          totalCombos += item.quantity;
           try {
             const slots = JSON.parse(item.customizations ?? "[]") as Array<{
               slotType: string;
@@ -485,7 +487,7 @@ export function useProductStats(
 
       const orderItemIds = items?.map((i) => i.id) ?? [];
       if (!orderItemIds.length)
-        return { totalBurgers, totalMedallones, totalFries, totalSides };
+        return { totalBurgers, totalMedallones, totalFries, totalSides, totalCombos };
 
       const { data: extraItems, error: extrasError } = await supabase
         .from("order_item_extras")
@@ -503,7 +505,7 @@ export function useProductStats(
         else if (category === "sides") totalSides += item.quantity;
       }
 
-      return { totalBurgers, totalMedallones, totalFries, totalSides };
+      return { totalBurgers, totalMedallones, totalFries, totalSides, totalCombos };
     },
   });
 }

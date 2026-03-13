@@ -386,15 +386,16 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             {productStatsLoading ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[1, 2, 3, 4].map((i) => (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                {[1, 2, 3, 4, 5].map((i) => (
                   <Skeleton key={i} className="h-20" />
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                 {[
                   { label: "Burgers", value: productStats?.totalBurgers ?? 0, emoji: "🍔" },
+                  { label: "Combos", value: productStats?.totalCombos ?? 0, emoji: "🎁" },
                   { label: "Medallones", value: productStats?.totalMedallones ?? 0, emoji: "🥩" },
                   { label: "Papas Fritas", value: productStats?.totalFries ?? 0, emoji: "🍟" },
                   { label: "Acompañamientos", value: productStats?.totalSides ?? 0, emoji: "🍗" },
