@@ -440,7 +440,7 @@ export function useProductStats(
 
       const { data: items, error: itemsError } = await supabase
         .from("order_items")
-        .select("id, quantity, burger_id, extra_id, combo_id, burgers(default_meat_quantity, default_fries_quantity), extras(category)")
+        .select("id, quantity, burger_id, extra_id, combo_id, customizations, burgers(default_meat_quantity, default_fries_quantity), extras(category)")
         .in("order_id", orderIds);
 
       if (itemsError) throw itemsError;
@@ -455,9 +455,27 @@ export function useProductStats(
           if (category === "extra") totalMedallones += item.quantity;
           else if (category === "fries") totalFries += item.quantity;
           else if (category === "sides") totalSides += item.quantity;
-        } else if (!item.combo_id) {
-          // Burger item: anything that is not a standalone extra or a combo
-          // (burger_id can be null if the burger was deleted from the menu)
+        } else if (item.combo_id) {
+          // Combo item — parse customizations JSON to get per-burger meatCount and friesQuantity
+          try {
+            const slots = JSON.parse(item.customizations ?? "[]") as Array<{
+              slotType: string;
+              burgers: Array<{ meatCount: number; friesQuantity: number; quantity: number }>;
+            }>;
+            for (const slot of slots) {
+              if (slot.slotType === "burger") {
+                for (const burger of slot.burgers) {
+                  totalBurgers += burger.quantity * item.quantity;
+                  totalMedallones += burger.meatCount * burger.quantity * item.quantity;
+                  totalFries += burger.friesQuantity * burger.quantity * item.quantity;
+                }
+              }
+            }
+          } catch {
+            // customizations malformed — skip
+          }
+        } else {
+          // Regular burger item (burger_id can be null if the burger was deleted from the menu)
           const burger = item.burgers as unknown as { default_meat_quantity: number; default_fries_quantity: number } | null;
           totalBurgers += item.quantity;
           totalMedallones += item.quantity * (burger?.default_meat_quantity ?? 2);

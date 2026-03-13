@@ -396,8 +396,8 @@ export default function AnalyticsPage() {
                 {[
                   { label: "Burgers", value: productStats?.totalBurgers ?? 0, emoji: "🍔" },
                   { label: "Medallones", value: productStats?.totalMedallones ?? 0, emoji: "🥩" },
-                  { label: "Fritas", value: productStats?.totalFries ?? 0, emoji: "🍟" },
-                  { label: "Acompañamientos", value: productStats?.totalSides ?? 0, emoji: "🥔" },
+                  { label: "Papas Fritas", value: productStats?.totalFries ?? 0, emoji: "🍟" },
+                  { label: "Acompañamientos", value: productStats?.totalSides ?? 0, emoji: "🍗" },
                 ].map((item) => (
                   <div
                     key={item.label}
