@@ -154,5 +154,7 @@ ${itemsBlock}
 💰 ${totalParts.join(" · ")}
 *TOTAL: ${formatCurrency(order.total_amount)}*
 ━━━━━━━━━━━━━━━${order.notes ? `\n📝 ${order.notes}` : ""}
-Gracias por tu compra 🙌`.trim();
+Gracias por tu compra 🙌
+
+*⚠️ POR FAVOR VERIFICAR QUE ESTÉ TODO CORRECTO EN LA ORDEN ⚠️*`.trim();
 }
