@@ -142,47 +142,78 @@ export function useOrdersAnalytics(
         ({ start: prevStart, end: prevEnd } = getMonthRange(prevMonthDate));
       }
 
-      const [{ data: current, error: e1 }, { data: prev, error: e2 }, { data: canceled, error: e3 }, { data: prevCanceled, error: e4 }] =
-        await Promise.all([
-          supabase
-            .from("orders")
-            .select("total_amount, updated_at")
-            .eq("status", "completed")
-            .gte("updated_at", start.toISOString())
-            .lte("updated_at", end.toISOString()),
-          supabase
-            .from("orders")
-            .select("total_amount, updated_at")
-            .eq("status", "completed")
-            .gte("updated_at", prevStart.toISOString())
-            .lte("updated_at", prevEnd.toISOString()),
-          supabase
-            .from("orders")
-            .select("id, updated_at")
-            .eq("status", "canceled")
-            .gte("updated_at", start.toISOString())
-            .lte("updated_at", end.toISOString()),
-          supabase
-            .from("orders")
-            .select("id, updated_at")
-            .eq("status", "canceled")
-            .gte("updated_at", prevStart.toISOString())
-            .lte("updated_at", prevEnd.toISOString()),
-        ]);
+      // Compute date strings for external_income (DATE column, no TZ conversion needed)
+      const startDateStr = toArDateStr(start);
+      const endDateStr = toArDateStr(end);
+      const prevStartDateStr = toArDateStr(prevStart);
+      const prevEndDateStr = toArDateStr(prevEnd);
+
+      const [
+        { data: current, error: e1 },
+        { data: prev, error: e2 },
+        { data: canceled, error: e3 },
+        { data: prevCanceled, error: e4 },
+        { data: externalIncome, error: e5 },
+        { data: prevExternalIncome, error: e6 },
+      ] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("total_amount, updated_at")
+          .eq("status", "completed")
+          .gte("updated_at", start.toISOString())
+          .lte("updated_at", end.toISOString()),
+        supabase
+          .from("orders")
+          .select("total_amount, updated_at")
+          .eq("status", "completed")
+          .gte("updated_at", prevStart.toISOString())
+          .lte("updated_at", prevEnd.toISOString()),
+        supabase
+          .from("orders")
+          .select("id, updated_at")
+          .eq("status", "canceled")
+          .gte("updated_at", start.toISOString())
+          .lte("updated_at", end.toISOString()),
+        supabase
+          .from("orders")
+          .select("id, updated_at")
+          .eq("status", "canceled")
+          .gte("updated_at", prevStart.toISOString())
+          .lte("updated_at", prevEnd.toISOString()),
+        supabase
+          .from("external_income")
+          .select("date, amount")
+          .gte("date", startDateStr)
+          .lte("date", endDateStr),
+        supabase
+          .from("external_income")
+          .select("date, amount")
+          .gte("date", prevStartDateStr)
+          .lte("date", prevEndDateStr),
+      ]);
 
       if (e1) throw e1;
       if (e2) throw e2;
       if (e3) throw e3;
       if (e4) throw e4;
+      if (e5) throw e5;
+      if (e6) throw e6;
 
       const currentCompleted = current?.length || 0;
       const prevCompleted = prev?.length || 0;
       const currentCanceled = canceled?.length || 0;
       const prevCanceled2 = prevCanceled?.length || 0;
-      const currentRevenue =
+      const currentOrdersRevenue =
         current?.reduce((acc, o) => acc + Number(o.total_amount), 0) || 0;
-      const prevRevenue =
+      const currentExternalRevenue =
+        externalIncome?.reduce((acc, e) => acc + Number(e.amount), 0) || 0;
+      const currentRevenue = currentOrdersRevenue + currentExternalRevenue;
+
+      const prevOrdersRevenue =
         prev?.reduce((acc, o) => acc + Number(o.total_amount), 0) || 0;
+      const prevExternalRevenue =
+        prevExternalIncome?.reduce((acc, e) => acc + Number(e.amount), 0) || 0;
+      const prevRevenue = prevOrdersRevenue + prevExternalRevenue;
 
       const msPerDay = 1000 * 60 * 60 * 24;
       const daysInPeriod =
@@ -213,6 +244,12 @@ export function useOrdersAnalytics(
         const key = toArDateStr(new Date(o.updated_at));
         if (!dailyMap[key]) dailyMap[key] = { orders: 0, revenue: 0, canceled: 0 };
         dailyMap[key].canceled++;
+      }
+      // Add external income to daily revenue (date is already YYYY-MM-DD in AR time)
+      for (const e of externalIncome || []) {
+        const key = e.date;
+        if (!dailyMap[key]) dailyMap[key] = { orders: 0, revenue: 0, canceled: 0 };
+        dailyMap[key].revenue += Number(e.amount);
       }
 
       // Fill all days in range
@@ -439,9 +476,11 @@ export function useProductStats(
 
       const orderIds = orders.map((o) => o.id);
 
+      // Embed order_item_extras inside the order_items query to avoid a second
+      // request with thousands of UUIDs in the URL (which hits PostgREST URL limits).
       const { data: items, error: itemsError } = await supabase
         .from("order_items")
-        .select("id, quantity, burger_id, extra_id, combo_id, customizations, burgers(default_meat_quantity, default_fries_quantity), extras(category)")
+        .select("quantity, burger_id, extra_id, combo_id, customizations, burgers(default_meat_quantity, default_fries_quantity), extras(category), order_item_extras(quantity, extras(category))")
         .in("order_id", orderIds);
 
       if (itemsError) throw itemsError;
@@ -483,26 +522,16 @@ export function useProductStats(
           totalMedallones += item.quantity * (burger?.default_meat_quantity ?? 2);
           totalFries += item.quantity * Number(burger?.default_fries_quantity ?? 1);
         }
-      }
 
-      const orderItemIds = items?.map((i) => i.id) ?? [];
-      if (!orderItemIds.length)
-        return { totalBurgers, totalMedallones, totalFries, totalSides, totalCombos };
-
-      const { data: extraItems, error: extrasError } = await supabase
-        .from("order_item_extras")
-        .select("quantity, extras(category)")
-        .in("order_item_id", orderItemIds);
-
-      if (extrasError) throw extrasError;
-
-      // Add extras added on top of burgers
-      for (const item of extraItems ?? []) {
-        const extras = item.extras as unknown as { category: string } | { category: string }[] | null;
-        const category = Array.isArray(extras) ? extras[0]?.category : extras?.category;
-        if (category === "extra") totalMedallones += item.quantity;
-        else if (category === "fries") totalFries += item.quantity;
-        else if (category === "sides") totalSides += item.quantity;
+        // Add extras added on top of this item (embedded — no second request needed)
+        const embeddedExtras = item.order_item_extras as unknown as Array<{ quantity: number; extras: { category: string } | { category: string }[] | null }> ?? [];
+        for (const extraItem of embeddedExtras) {
+          const extras = extraItem.extras;
+          const category = Array.isArray(extras) ? extras[0]?.category : extras?.category;
+          if (category === "extra") totalMedallones += extraItem.quantity;
+          else if (category === "fries") totalFries += extraItem.quantity;
+          else if (category === "sides") totalSides += extraItem.quantity;
+        }
       }
 
       return { totalBurgers, totalMedallones, totalFries, totalSides, totalCombos };

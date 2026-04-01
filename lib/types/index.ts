@@ -123,6 +123,18 @@ export interface OrderWithItems extends Order {
 }
 
 // ============================================
+// EXTERNAL INCOME
+// ============================================
+
+export interface ExternalIncome {
+  id: string;
+  date: string; // YYYY-MM-DD
+  amount: number;
+  description: string | null;
+  created_at: string;
+}
+
+// ============================================
 // FRONTEND TYPES - Para el wizard
 // ============================================
 

@@ -221,7 +221,10 @@ export function useOrderWizard({
         customer_id: customerId ?? null,
         customer_name:
           customer.selectedCustomer?.name ?? customer.newCustomerData.name,
-        customer_address_id: customerAddressId ?? null,
+        customer_address_id:
+          settings.deliveryType === "delivery"
+            ? (customerAddressId ?? null)
+            : null,
         delivery_type: settings.deliveryType,
         delivery_fee:
           settings.deliveryType === "delivery" ? settings.deliveryFee : 0,

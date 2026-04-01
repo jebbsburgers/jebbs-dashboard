@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { User, MapPin, Phone, Info, AlertCircle, Clock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
 import { CustomerAddress } from "@/lib/types";
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -134,6 +134,19 @@ export function SummaryStep({
   onDeliveryTimeChange,
   deliveryTime,
 }: SummaryStepProps) {
+  const topRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let el = topRef.current?.parentElement;
+    while (el) {
+      if (el.scrollHeight > el.clientHeight) {
+        el.scrollTo({ top: 0 });
+        break;
+      }
+      el = el.parentElement;
+    }
+  }, []);
+
   const hasAddress = useMemo(() => {
     if (isNewCustomer) {
       return newAddressData?.address?.trim().length ?? 0 > 0;
@@ -144,7 +157,7 @@ export function SummaryStep({
   const isFullDiscount = orderTotal === 0 && discountType !== "none";
 
   return (
-    <div className="space-y-6">
+    <div ref={topRef} className="space-y-6">
       {/* Customer Info */}
       <Card className="bg-card">
         <CardContent className="p-3">

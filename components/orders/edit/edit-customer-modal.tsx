@@ -20,10 +20,12 @@ export function EditCustomerModal({
   open,
   onOpenChange,
   customer,
+  onSelectAddress,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   customer: Customer;
+  onSelectAddress?: (addressId: string) => void;
 }) {
   const [name, setName] = useState(customer.name);
   const [phone, setPhone] = useState(customer.phone ?? "");
@@ -44,9 +46,16 @@ export function EditCustomerModal({
 
   useEffect(() => {
     if (!selectedAddress && addresses.length > 0) {
-      setSelectedAddress(addresses.find((a) => a.is_default) ?? addresses[0]);
+      const addr = addresses.find((a) => a.is_default) ?? addresses[0];
+      setSelectedAddress(addr);
+      onSelectAddress?.(addr.id);
     }
   }, [addresses, selectedAddress]);
+
+  const handleSelectAddress = (addr: any) => {
+    setSelectedAddress(addr);
+    onSelectAddress?.(addr.id);
+  };
 
   const isDirty =
     name.trim() !== customer.name || phone.trim() !== (customer.phone ?? "");
@@ -165,7 +174,7 @@ export function EditCustomerModal({
               addresses={addresses}
               isLoading={isLoading || isFetching}
               selectedAddressId={selectedAddress?.id}
-              onSelect={setSelectedAddress}
+              onSelect={handleSelectAddress}
             />
           </div>
         </div>

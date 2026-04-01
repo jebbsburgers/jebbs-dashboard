@@ -272,7 +272,11 @@ export default function OrdersHistoryPage() {
                             <TableCell className="text-muted-foreground">
                               {formatDateTime(order.created_at)}
                             </TableCell>
-                            <TableCell className="flex justify-end gap-2">
+                            <TableCell className="flex items-center justify-end gap-2">
+                              <span className={`text-xs font-medium tracking-wide uppercase ${order.payment_method === "cash" ? "text-emerald-600" : "text-blue-600"}`}>
+                                {order.payment_method === "cash" ? "Efectivo" : "Transferencia"}
+                              </span>
+                              <span className="text-border select-none">|</span>
                               <Button
                                 variant="ghost"
                                 size="sm"

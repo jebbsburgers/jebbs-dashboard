@@ -34,6 +34,7 @@ import {
   useProductStats,
 } from "@/lib/hooks/orders/use-orders-history";
 import { formatCurrency } from "@/lib/utils/format";
+import { ExternalIncomePanel } from "@/components/analytics/external-income-panel";
 import {
   ChartContainer,
   ChartTooltip,
@@ -139,6 +140,35 @@ export default function AnalyticsPage() {
   const [calendarSelection, setCalendarSelection] = useState<DateRange | undefined>(undefined);
 
   const resolvedCustomRange = viewMode === "custom" ? customRange : undefined;
+
+  // Compute date range strings (YYYY-MM-DD in AR time) for the external income panel
+  const { panelStartDate, panelEndDate } = (() => {
+    const toArStr = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
+    if (viewMode === "custom" && customRange) {
+      return {
+        panelStartDate: toArStr(customRange.from),
+        panelEndDate: toArStr(customRange.to),
+      };
+    }
+    const arDate = new Date(selectedDate.toLocaleString("en-US", { timeZone: TZ }));
+    if (viewMode === "week") {
+      const day = arDate.getDay();
+      const diffToMonday = day === 0 ? -6 : 1 - day;
+      const monday = new Date(arDate);
+      monday.setDate(arDate.getDate() + diffToMonday);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return { panelStartDate: toArStr(monday), panelEndDate: toArStr(sunday) };
+    }
+    // month
+    const year = arDate.getFullYear();
+    const month = arDate.getMonth();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    return {
+      panelStartDate: `${year}-${String(month + 1).padStart(2, "0")}-01`,
+      panelEndDate: `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDate).padStart(2, "0")}`,
+    };
+  })();
 
   const { data: analytics, isLoading: analyticsLoading } = useOrdersAnalytics(
     selectedDate,
@@ -375,6 +405,11 @@ export default function AnalyticsPage() {
             })}
           </div>
         )}
+
+        {/* External income */}
+        <div className="mt-4">
+          <ExternalIncomePanel startDate={panelStartDate} endDate={panelEndDate} />
+        </div>
 
         {/* Product stats */}
         <Card className="mt-4 ios-glass bg-card">

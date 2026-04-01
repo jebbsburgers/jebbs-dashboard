@@ -514,6 +514,7 @@ export function OrderWizardDrawer({
           open={wizard.customer.isEditingCustomer}
           onOpenChange={wizard.customer.setIsEditingCustomer}
           customer={wizard.customer.selectedCustomer}
+          onSelectAddress={wizard.customer.setSelectedAddress}
         />
       )}
     </>
