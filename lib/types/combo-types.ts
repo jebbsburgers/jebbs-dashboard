@@ -50,6 +50,7 @@ export interface ComboSlotWithRules extends ComboSlot {
     min_quantity: number;
     max_quantity: number;
     allowed_meat_count?: number[];
+    no_fries?: boolean;
   };
 }
 
@@ -75,6 +76,8 @@ export interface SelectedBurger {
   quantity: number;
   meatCount: number;
   friesQuantity: number;
+  referenceFriesQuantity?: number; // Override para combos sin papas: evita descuento al calcular precio
+  isVeggie?: boolean; // true = medallones veggies en lugar de carne
   removedIngredients: string[];
   selectedExtras: Array<{
     extra: Extra;

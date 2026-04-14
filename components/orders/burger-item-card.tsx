@@ -13,7 +13,8 @@ export type SelectedBurger = {
   id: string;
   quantity: number;
   meatCount: number;
-  friesQuantity: number; // 🍟
+  friesQuantity: number;
+  isVeggie?: boolean;
   removedIngredients: string[];
   selectedExtras: {
     extra: { id: string; name: string; price: number };
@@ -47,7 +48,8 @@ type Props = {
   onRemove: () => void;
   onToggleIngredient: (ingredient: string) => void;
   onUpdateMeatCount: (delta: number) => void;
-  onUpdateFriesCount: (delta: number) => void; // 🆕
+  onUpdateFriesCount: (delta: number) => void;
+  onToggleVeggie?: () => void;
   onToggleExtra: (extra: any) => void;
   onUpdateExtraQuantity: (extraId: string, delta: number) => void;
 };
@@ -68,7 +70,8 @@ export function SelectedBurgerCard({
   onRemove,
   onToggleIngredient,
   onUpdateMeatCount,
-  onUpdateFriesCount, // 🆕
+  onUpdateFriesCount,
+  onToggleVeggie,
   onToggleExtra,
   onUpdateExtraQuantity,
 }: Props) {
@@ -245,6 +248,20 @@ export function SelectedBurgerCard({
                     <span className="text-xs text-muted-foreground">
                       {getMeatLabel()}
                     </span>
+
+                    {onToggleVeggie && (
+                      <button
+                        onClick={onToggleVeggie}
+                        className={cn(
+                          "ml-1 rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors cursor-pointer",
+                          item.isVeggie
+                            ? "bg-green-100 text-green-700 border-green-300 dark:bg-green-900/40 dark:text-green-400 dark:border-green-700"
+                            : "bg-card text-muted-foreground border-border hover:bg-accent",
+                        )}
+                      >
+                        🌱 Veggie
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -308,7 +325,7 @@ export function SelectedBurgerCard({
                     {categoryExtras
                       .filter(
                         (e) =>
-                          e.name !== "Medallón extra" &&
+                          e.name !== "Medallón" &&
                           e.name !== "Papas Fritas Chicas",
                       )
                       .map((extra) => {

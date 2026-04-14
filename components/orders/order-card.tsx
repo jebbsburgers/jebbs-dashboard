@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +15,13 @@ import {
   ArrowRight,
   Copy,
   Timer,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
-import { useTogglePaymentStatus } from "@/lib/hooks/orders/use-orders";
+import { useTogglePaymentStatus, useQuickPatchOrder } from "@/lib/hooks/orders/use-orders";
 import { cn } from "@/lib/utils";
 import { formatOrderForWhatsapp } from "@/lib/utils/formatOrderWhatsapp";
 import { toast } from "sonner";
@@ -48,6 +52,41 @@ export function OrderCard({
 }: OrderCardProps) {
   const canEdit = order.status === "new" || order.status === "ready";
   const togglePayment = useTogglePaymentStatus();
+  const quickPatch = useQuickPatchOrder();
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftAmount, setDraftAmount] = useState("");
+  const [draftMethod, setDraftMethod] = useState<"cash" | "transfer">(order.payment_method);
+
+  const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraftAmount(String(order.total_amount));
+    setDraftMethod(order.payment_method);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const parsed = parseInt(draftAmount, 10);
+    if (isNaN(parsed) || parsed < 0) {
+      toast.error("Monto inválido");
+      return;
+    }
+    quickPatch.mutate(
+      { orderId: order.id, total_amount: parsed, payment_method: draftMethod },
+      {
+        onSuccess: () => {
+          toast.success("Pedido actualizado");
+          setIsEditing(false);
+        },
+        onError: () => toast.error("Error al guardar"),
+      },
+    );
+  };
 
   const handlePaymentToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -135,63 +174,126 @@ export function OrderCard({
 
         {/* Footer: total + actions */}
         <div className="flex items-center justify-between pt-3 border-t">
-          <p className="text-2xl font-bold">
-            {formatCurrency(order.total_amount)}
-          </p>
+          {!isEditing ? (
+            <div className="flex items-center gap-2">
+              <p className="text-2xl font-bold">
+                {formatCurrency(order.total_amount)}
+              </p>
+              {canEdit && (
+                <button
+                  onClick={handleStartEdit}
+                  title="Editar precio y método de pago"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded cursor-pointer"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <input
+                type="number"
+                min="0"
+                value={draftAmount}
+                onChange={(e) => setDraftAmount(e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
+                autoFocus
+                className="w-28 h-8 rounded-md border border-input bg-background px-2 text-lg font-bold focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+              <div className="flex gap-1.5">
+                {(["cash", "transfer"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDraftMethod(m);
+                    }}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer",
+                      draftMethod === m
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-muted-foreground border-border hover:bg-accent",
+                    )}
+                  >
+                    {m === "cash" ? "💵 Efectivo" : "🏦 Transferencia"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <div className="flex items-center gap-2">
-            {canEdit && onEditOrder && (
+          {!isEditing ? (
+            <div className="flex items-center gap-2">
+              {canEdit && onEditOrder && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditOrder(order);
+                  }}
+                >
+                  <Edit className="mr-1.5 h-4 w-4" />
+                  Editar
+                </Button>
+              )}
               <Button
-                variant="ghost"
+                variant="default"
                 size="sm"
                 className="cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditOrder(order);
-                }}
+                onClick={() => onViewDetails(order)}
               >
-                <Edit className="mr-1.5 h-4 w-4" />
-                Editar
+                <Eye className="mr-1.5 h-4 w-4" />
+                Ver detalles
               </Button>
-            )}
-
-            <Button
-              variant="default"
-              size="sm"
-              className="cursor-pointer"
-              onClick={() => onViewDetails(order)}
-            >
-              <Eye className="mr-1.5 h-4 w-4" />
-              Ver detalles
-            </Button>
-          </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 self-start">
+              <button
+                onClick={handleSaveEdit}
+                disabled={quickPatch.isPending}
+                className="p-1.5 rounded text-green-600 hover:bg-green-50 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="p-1.5 rounded text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Status advance button */}
-        <div className="mt-3 w-full flex items-center justify-between">
-          <div>
-            {order.payment_method === "cash" && (
-              <Badge variant="outline" className="text-xs gap-1 bg-card">
-                💵 Efectivo
-              </Badge>
-            )}
+        {!isEditing && (
+          <div className="mt-3 w-full flex items-center justify-between">
+            <div>
+              {order.payment_method === "cash" && (
+                <Badge variant="outline" className="text-xs gap-1 bg-card">
+                  💵 Efectivo
+                </Badge>
+              )}
+            </div>
+            {onChangeStatus &&
+              (order.status === "new" || order.status === "ready") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer bg-card"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChangeStatus(order);
+                  }}
+                >
+                  <ArrowRight className="mr-1.5 h-4 w-4" />
+                  {order.status === "new" ? "Listo" : "Completar"}
+                </Button>
+              )}
           </div>
-          {onChangeStatus &&
-            (order.status === "new" || order.status === "ready") && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="cursor-pointer bg-card"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onChangeStatus(order);
-                }}
-              >
-                <ArrowRight className="mr-1.5 h-4 w-4" />
-                {order.status === "new" ? "Listo" : "Completar"}
-              </Button>
-            )}
-        </div>
+        )}
       </CardContent>
     </Card>
   );

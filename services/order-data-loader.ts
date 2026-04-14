@@ -95,6 +95,7 @@ function loadBurgers(
         burger,
         quantity: item.quantity,
         meatCount,
+        isVeggie: customData?.isVeggie ?? false,
         friesQuantity:
           customData?.friesQuantity ?? burger.default_fries_quantity ?? 1,
         removedIngredients: customData?.removedIngredients || [],
@@ -211,6 +212,7 @@ function loadCombos(
                 burger,
                 quantity: burgerData.quantity,
                 meatCount: burgerData.meatCount,
+                isVeggie: burgerData.isVeggie ?? false,
                 friesQuantity: burgerData.friesQuantity,
                 removedIngredients: burgerData.removedIngredients || [],
                 selectedExtras,

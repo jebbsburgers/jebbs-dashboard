@@ -12,11 +12,12 @@ export function useBurgerSelection(meatExtra?: { price: number } | null) {
       id: nanoid(),
       burger,
       quantity: 1,
-      meatCount: burger.default_meat_quantity ?? 2, // ✅ Nombre correcto
+      meatCount: burger.default_meat_quantity ?? 2,
       meatPriceAdjustment: 0,
       removedIngredients: [],
       selectedExtras: [],
-      friesQuantity: burger.default_fries_quantity ?? 1, // ✅ Nombre correcto
+      friesQuantity: burger.default_fries_quantity ?? 1,
+      isVeggie: false,
     };
 
     setSelectedBurgers((prev) => [...prev, newBurger]);
@@ -118,7 +119,12 @@ export function useBurgerSelection(meatExtra?: { price: number } | null) {
     );
   };
 
-  // 🆕 Actualizar cantidad de papas
+  const toggleVeggie = (id: string) => {
+    setSelectedBurgers((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, isVeggie: !b.isVeggie } : b)),
+    );
+  };
+
   const updateFriesQuantity = (id: string, delta: number) => {
     setSelectedBurgers((prev) =>
       prev.map((b) => {
@@ -155,6 +161,7 @@ export function useBurgerSelection(meatExtra?: { price: number } | null) {
     toggleExtra,
     updateExtraQuantity,
     updateFriesQuantity,
+    toggleVeggie,
     loadBurgers,
     toggleExpanded,
     reset,

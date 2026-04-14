@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,13 @@ import {
   DollarSign,
   ArrowRight,
   Copy,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
-import { useTogglePaymentStatus } from "@/lib/hooks/orders/use-orders";
+import { useTogglePaymentStatus, useQuickPatchOrder } from "@/lib/hooks/orders/use-orders";
 import { cn } from "@/lib/utils";
 import { formatOrderForWhatsapp } from "@/lib/utils/formatOrderWhatsapp";
 import { toast } from "sonner";
@@ -41,10 +45,46 @@ export function OrderCardMobile({
   onChangeStatus,
 }: OrderCardMobileProps) {
   const togglePayment = useTogglePaymentStatus();
+  const quickPatch = useQuickPatchOrder();
   const status = order.status;
   const config = statusConfig[status];
 
   const canEdit = order.status === "new" || order.status === "ready";
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftAmount, setDraftAmount] = useState("");
+  const [draftMethod, setDraftMethod] = useState<"cash" | "transfer">(order.payment_method);
+
+  const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraftAmount(String(order.total_amount));
+    setDraftMethod(order.payment_method);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const parsed = parseInt(draftAmount, 10);
+    if (isNaN(parsed) || parsed < 0) {
+      toast.error("Monto inválido");
+      return;
+    }
+    quickPatch.mutate(
+      { orderId: order.id, total_amount: parsed, payment_method: draftMethod },
+      {
+        onSuccess: () => {
+          toast.success("Pedido actualizado");
+          setIsEditing(false);
+        },
+        onError: () => toast.error("Error al guardar"),
+      },
+    );
+  };
 
   const handlePaymentToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -107,38 +147,109 @@ export function OrderCardMobile({
             </div>
           </div>
 
-          <div className="text-xl font-bold text-right">
-            {formatCurrency(order.total_amount)}
+          <div className="flex flex-col items-end gap-1">
+            {!isEditing ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-bold">
+                  {formatCurrency(order.total_amount)}
+                </span>
+                {canEdit && (
+                  <button
+                    onClick={handleStartEdit}
+                    title="Editar precio y método de pago"
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded cursor-pointer"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-end gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={draftAmount}
+                  onChange={(e) => setDraftAmount(e.target.value)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  autoFocus
+                  className="w-24 h-8 rounded-md border border-input bg-background px-2 text-right text-base font-bold focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                <div className="flex gap-1">
+                  {(["cash", "transfer"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDraftMethod(m);
+                      }}
+                      className={cn(
+                        "px-2 py-0.5 rounded text-xs font-medium border transition-colors cursor-pointer",
+                        draftMethod === m
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-card text-muted-foreground border-border hover:bg-accent",
+                      )}
+                    >
+                      {m === "cash" ? "💵 Efectivo" : "🏦 Transfer"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* BOTONES */}
-        <div className="flex gap-2 border-t pt-3">
-          {canEdit && onEditOrder && (
+        {!isEditing ? (
+          <div className="flex gap-2 border-t pt-3">
+            {canEdit && onEditOrder && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 bg-card"
+                onClick={() => onEditOrder(order)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </Button>
+            )}
+
             <Button
               size="sm"
-              variant="outline"
-              className="flex-1 bg-card"
-              onClick={() => onEditOrder(order)}
+              variant="default"
+              className="flex-1"
+              onClick={() => onViewDetails(order)}
             >
-              <Edit className="mr-2 h-4 w-4" />
-              Editar
+              <Eye className="mr-2 h-4 w-4" />
+              Ver detalles
             </Button>
-          )}
-
-          <Button
-            size="sm"
-            variant="default"
-            className="flex-1"
-            onClick={() => onViewDetails(order)}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            Ver detalles
-          </Button>
-        </div>
+          </div>
+        ) : (
+          <div className="flex gap-2 border-t pt-3 justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSaveEdit}
+              disabled={quickPatch.isPending}
+              className="text-green-600 hover:bg-green-50"
+            >
+              <Check className="mr-1 h-4 w-4" />
+              Guardar
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelEdit}
+              className="text-destructive hover:bg-destructive/10"
+            >
+              <X className="mr-1 h-4 w-4" />
+              Cancelar
+            </Button>
+          </div>
+        )}
 
         {/* Cambiar estado */}
-        {onChangeStatus &&
+        {!isEditing &&
+          onChangeStatus &&
           (order.status === "new" || order.status === "ready") && (
             <div className="flex items-center justify-between">
               <div>

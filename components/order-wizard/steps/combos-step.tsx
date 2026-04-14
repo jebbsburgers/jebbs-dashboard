@@ -30,6 +30,7 @@ interface CombosStepProps {
         quantity: number;
         meatCount: number;
         friesQuantity: number;
+        isVeggie?: boolean;
         removedIngredients: string[];
         selectedExtras: { extra: Extra; quantity: number }[];
       }>;
@@ -48,6 +49,7 @@ interface CombosStepProps {
   onDecreaseBurgerQty: (comboId: string, slotId: string, burgerItemId: string) => void;
   onUpdateBurgerMeat: (comboId: string, slotId: string, burgerItemId: string, meatCount: number) => void;
   onUpdateBurgerFries: (comboId: string, slotId: string, burgerItemId: string, delta: number) => void;
+  onToggleBurgerVeggie: (comboId: string, slotId: string, burgerItemId: string) => void;
   onToggleBurgerIngredient: (comboId: string, slotId: string, burgerItemId: string, ingredient: string) => void;
   onToggleBurgerExtra: (comboId: string, slotId: string, burgerItemId: string, extra: Extra) => void;
   onUpdateBurgerExtraQty: (comboId: string, slotId: string, burgerItemId: string, extraId: string, delta: number) => void;
@@ -75,6 +77,7 @@ export function CombosStep({
   onDecreaseBurgerQty,
   onUpdateBurgerMeat,
   onUpdateBurgerFries,
+  onToggleBurgerVeggie,
   onToggleBurgerIngredient,
   onToggleBurgerExtra,
   onUpdateBurgerExtraQty,
@@ -187,6 +190,9 @@ export function CombosStep({
                           }}
                           onUpdateFriesCount={(d) =>
                             onUpdateBurgerFries(comboInstance.id, slot.slotId, item.id, d)
+                          }
+                          onToggleVeggie={() =>
+                            onToggleBurgerVeggie(comboInstance.id, slot.slotId, item.id)
                           }
                           onToggleIngredient={(ingredient) =>
                             onToggleBurgerIngredient(comboInstance.id, slot.slotId, item.id, ingredient)

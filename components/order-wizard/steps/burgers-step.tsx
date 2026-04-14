@@ -16,6 +16,7 @@ interface BurgersStepProps {
     quantity: number;
     meatCount: number;
     friesQuantity: number;
+    isVeggie?: boolean;
     meatPriceAdjustment: number;
     removedIngredients: string[];
     selectedExtras: { extra: Extra; quantity: number }[];
@@ -26,6 +27,7 @@ interface BurgersStepProps {
   onToggleIngredient: (itemId: string, ingredient: string) => void;
   onUpdateMeatCount: (itemId: string, delta: number) => void;
   onUpdateFriesQuantity: (itemId: string, delta: number) => void;
+  onToggleVeggie: (itemId: string) => void;
   onToggleExtra: (itemId: string, extra: Extra) => void;
   onUpdateExtraQuantity: (itemId: string, extraId: string, delta: number) => void;
 
@@ -46,6 +48,7 @@ export function BurgersStep({
   onToggleIngredient,
   onUpdateMeatCount,
   onUpdateFriesQuantity,
+  onToggleVeggie,
   onToggleExtra,
   onUpdateExtraQuantity,
   expandedBurger,
@@ -122,6 +125,7 @@ export function BurgersStep({
                   onToggleIngredient={(ing) => onToggleIngredient(item.id, ing)}
                   onUpdateMeatCount={(d) => onUpdateMeatCount(item.id, d)}
                   onUpdateFriesCount={(d) => onUpdateFriesQuantity(item.id, d)}
+                  onToggleVeggie={() => onToggleVeggie(item.id)}
                   onToggleExtra={(extra) => onToggleExtra(item.id, extra)}
                   onUpdateExtraQuantity={(extraId, d) =>
                     onUpdateExtraQuantity(item.id, extraId, d)

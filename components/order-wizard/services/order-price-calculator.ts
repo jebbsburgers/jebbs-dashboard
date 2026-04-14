@@ -84,7 +84,9 @@ export class OrderPriceCalculator {
           let friesAdjustment = 0;
           if (friesExtra) {
             const referenceFriesCount =
-              burger.burger.default_fries_quantity ?? 1;
+              burger.referenceFriesQuantity ??
+              burger.burger.default_fries_quantity ??
+              1;
             const friesDiff = burger.friesQuantity - referenceFriesCount;
             friesAdjustment = friesDiff * friesExtra.price;
           }

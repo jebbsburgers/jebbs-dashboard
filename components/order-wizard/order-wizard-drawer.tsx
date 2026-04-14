@@ -297,6 +297,7 @@ export function OrderWizardDrawer({
                   onDecreaseBurgerQty={wizard.combos.decreaseBurgerQty}
                   onUpdateBurgerMeat={wizard.combos.updateBurgerMeat}
                   onUpdateBurgerFries={wizard.combos.updateComboBurgerFries}
+                  onToggleBurgerVeggie={wizard.combos.toggleComboBurgerVeggie}
                   onSelectExtraForSlot={wizard.combos.selectExtraForSlot}
                   onToggleBurgerIngredient={
                     wizard.combos.toggleComboBurgerIngredient
@@ -323,6 +324,7 @@ export function OrderWizardDrawer({
                   onToggleIngredient={wizard.burgers.toggleIngredient}
                   onUpdateMeatCount={wizard.burgers.updateMeatCount}
                   onUpdateFriesQuantity={wizard.burgers.updateFriesQuantity}
+                  onToggleVeggie={wizard.burgers.toggleVeggie}
                   onToggleExtra={wizard.burgers.toggleExtra}
                   onUpdateExtraQuantity={wizard.burgers.updateExtraQuantity}
                   expandedBurger={wizard.burgers.expandedBurger}

@@ -224,6 +224,9 @@ export function OrderDetailsModal({
                                     </p>
 
                                     <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                                      {(burger as any).isVeggie && (
+                                        <p>• 🌱 Veggie</p>
+                                      )}
                                       {burger.meatCount !== 2 && (
                                         <p>
                                           • {burger.meatCount}{" "}
@@ -331,6 +334,9 @@ export function OrderDetailsModal({
                               return (
                                 <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
                                   <p>• {sizeLabel}</p>
+                                  {singleData.isVeggie && (
+                                    <p>• 🌱 Veggie</p>
+                                  )}
 
                                   {singleData.friesQuantity === 0 && (
                                     <p>• 🍟 Sin papas</p>

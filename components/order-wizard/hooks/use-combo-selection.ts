@@ -100,9 +100,14 @@ export function useComboSelection() {
                             2,
                           removedIngredients: [],
                           selectedExtras: [],
-                          friesQuantity:
-                            Number(burger.default_fries_quantity) ?? 1,
-                          meatPriceAdjustment: 0, // 🆕 Campo requerido
+                          friesQuantity: s.rules?.no_fries
+                            ? 0
+                            : Number(burger.default_fries_quantity) ?? 1,
+                          referenceFriesQuantity: s.rules?.no_fries
+                            ? 0
+                            : Number(burger.default_fries_quantity) ?? 1,
+                          isVeggie: false,
+                          meatPriceAdjustment: 0,
                         },
                       ],
                     },
@@ -398,6 +403,34 @@ export function useComboSelection() {
     );
   };
 
+  const toggleComboBurgerVeggie = (
+    comboId: string,
+    slotId: string,
+    burgerItemId: string,
+  ) => {
+    setSelectedCombos((prev) =>
+      prev.map((c) =>
+        c.id !== comboId
+          ? c
+          : {
+              ...c,
+              slots: c.slots.map((s) =>
+                s.slotId !== slotId
+                  ? s
+                  : {
+                      ...s,
+                      burgers: s.burgers.map((b) =>
+                        b.id === burgerItemId
+                          ? { ...b, isVeggie: !b.isVeggie }
+                          : b,
+                      ),
+                    },
+              ),
+            },
+      ),
+    );
+  };
+
   /* ================= EXTRAS FOR SLOTS ================= */
 
   const selectExtraForSlot = (
@@ -466,6 +499,7 @@ export function useComboSelection() {
     toggleComboBurgerExtra,
     updateComboBurgerExtraQty,
     updateComboBurgerFries,
+    toggleComboBurgerVeggie,
 
     // Extras for slots
     selectExtraForSlot,

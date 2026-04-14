@@ -28,9 +28,9 @@ import { Plus, Edit, Trash2, Layers, Loader2 } from "lucide-react";
 import {
   useAllCombos,
   useCreateCombo,
-  useUpdateCombo,
   useDeleteCombo,
   useCreateComboWithSlots,
+  useUpdateComboWithSlots,
 } from "@/lib/hooks/use-combos";
 import { formatCurrency } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
@@ -44,16 +44,17 @@ const EMPTY_FORM = {
   is_available: true,
 
   burgers_qty: 0,
-  burgers_default_meat_quantity: 2, // 🆕 Por defecto doble (2 carnes)
+  burgers_default_meat_quantity: 2,
 
   include_drink: false,
   include_nuggets: false,
+  include_fries: true,
 };
 
 export default function CombosPage() {
   const { data: combos, isLoading, isError } = useAllCombos();
   const createCombo = useCreateCombo();
-  const updateCombo = useUpdateCombo();
+  const updateComboWithSlots = useUpdateComboWithSlots();
   const deleteCombo = useDeleteCombo();
   const createComboWithSlots = useCreateComboWithSlots();
 
@@ -86,72 +87,71 @@ export default function CombosPage() {
   };
 
   const openEdit = (combo: Combo) => {
+    const c = combo as import("@/lib/types/combo-types").ComboWithSlots;
+    const burgerSlot = c.slots?.find((s) => s.slot_type === "burger");
+    const hasDrink = c.slots?.some((s) => s.slot_type === "drink") ?? false;
+    const hasNuggets = c.slots?.some((s) => s.slot_type === "nuggets") ?? false;
+
     setEditing(combo);
     setForm({
-      ...EMPTY_FORM,
       name: combo.name,
       price: combo.price.toString(),
       is_available: combo.is_available,
+      burgers_qty: burgerSlot?.quantity ?? 0,
+      burgers_default_meat_quantity: burgerSlot?.default_meat_quantity ?? 2,
+      include_drink: hasDrink,
+      include_nuggets: hasNuggets,
+      include_fries: !burgerSlot?.rules?.no_fries,
     });
     setDialogOpen(true);
   };
 
   /* ---------- ACTIONS ---------- */
 
+  const buildSlots = () => [
+    ...(form.burgers_qty > 0
+      ? [
+          {
+            slot_type: "burger",
+            quantity: form.burgers_qty,
+            required: true,
+            default_meat_quantity: form.burgers_default_meat_quantity,
+            rules: [
+              {
+                rule_type: "allowed_default_meat_quantity",
+                rule_value: JSON.stringify([form.burgers_default_meat_quantity]),
+              },
+              ...(!form.include_fries
+                ? [{ rule_type: "no_fries", rule_value: "true" }]
+                : []),
+            ],
+          },
+        ]
+      : []),
+    ...(form.include_drink
+      ? [{ slot_type: "drink", quantity: 1, required: false }]
+      : []),
+    ...(form.include_nuggets
+      ? [{ slot_type: "nuggets", quantity: 1, required: false }]
+      : []),
+  ];
+
   const submit = async () => {
     try {
       if (editing) {
-        await updateCombo.mutateAsync({
+        await updateComboWithSlots.mutateAsync({
           id: editing.id,
           name: form.name,
           price: Number(form.price),
           is_available: form.is_available,
+          slots: buildSlots(),
         });
       } else {
         await createComboWithSlots.mutateAsync({
           name: form.name,
           price: Number(form.price),
           is_available: form.is_available,
-          slots: [
-            ...(form.burgers_qty > 0
-              ? [
-                  {
-                    slot_type: "burger",
-                    quantity: form.burgers_qty,
-                    required: true,
-                    default_meat_quantity: form.burgers_default_meat_quantity, // 🆕 guardar la cantidad de carnes
-                    rules: [
-                      {
-                        rule_type: "allowed_default_meat_quantity",
-                        rule_value: JSON.stringify([
-                          form.burgers_default_meat_quantity,
-                        ]),
-                      },
-                    ],
-                  },
-                ]
-              : []),
-
-            ...(form.include_drink
-              ? [
-                  {
-                    slot_type: "drink",
-                    quantity: 1,
-                    required: false,
-                  },
-                ]
-              : []),
-
-            ...(form.include_nuggets
-              ? [
-                  {
-                    slot_type: "nuggets",
-                    quantity: 1,
-                    required: false,
-                  },
-                ]
-              : []),
-          ],
+          slots: buildSlots(),
         });
       }
 
@@ -171,7 +171,7 @@ export default function CombosPage() {
     }
   };
 
-  const isSaving = createComboWithSlots.isPending || updateCombo.isPending;
+  const isSaving = createComboWithSlots.isPending || updateComboWithSlots.isPending;
   const isDeleting = deleteCombo.isPending;
 
   /* ---------- UI ---------- */
@@ -333,6 +333,16 @@ export default function CombosPage() {
                     1=simple, 2=doble, 3=triple
                   </p>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={form.include_fries}
+                  onCheckedChange={(v) =>
+                    setForm({ ...form, include_fries: v })
+                  }
+                />
+                <Label>Incluye papas</Label>
               </div>
 
               <div className="flex items-center gap-2">

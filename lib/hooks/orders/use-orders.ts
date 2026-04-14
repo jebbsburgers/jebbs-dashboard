@@ -353,6 +353,50 @@ export function useCompleteOrder() {
   });
 }
 
+export function useQuickPatchOrder() {
+  const queryClient = useQueryClient();
+  const supabase = createClient();
+
+  return useMutation({
+    mutationFn: async ({
+      orderId,
+      total_amount,
+      payment_method,
+    }: {
+      orderId: string;
+      total_amount: number;
+      payment_method: "cash" | "transfer";
+    }) => {
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          total_amount,
+          payment_method,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", orderId);
+      if (error) throw error;
+    },
+    onMutate: async ({ orderId, total_amount, payment_method }) => {
+      await queryClient.cancelQueries({ queryKey: ["orders"] });
+      const previousOrders = queryClient.getQueryData<Order[]>(["orders"]);
+      queryClient.setQueryData<Order[]>(["orders"], (old) =>
+        old?.map((o) =>
+          o.id === orderId ? { ...o, total_amount, payment_method } : o,
+        ),
+      );
+      return { previousOrders };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousOrders)
+        queryClient.setQueryData(["orders"], context.previousOrders);
+    },
+    onSuccess: () => {
+      queryClient.refetchQueries({ queryKey: ["orders"], type: "active" });
+    },
+  });
+}
+
 export function useTodayOrdersCount() {
   const supabase = createClient();
   const today = new Date();

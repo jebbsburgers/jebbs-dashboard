@@ -92,6 +92,9 @@ export function formatOrderForWhatsapp(order: Order) {
             comboLines.push(`   🍔 ${burger.quantity}x ${burger.name} x${burger.meatCount}`);
 
             const burgerParts: string[] = [];
+            if (burger.isVeggie) {
+              burgerParts.push(`🌱 Veggie`);
+            }
             if (burger.friesQuantity !== undefined) {
               if (burger.friesQuantity === 0) {
                 const discount = Math.abs(burger.friesAdjustment ?? 0);
@@ -120,6 +123,10 @@ export function formatOrderForWhatsapp(order: Order) {
           comboLines.push(`   ${label} ${slot.selectedExtra.name}`);
         }
       });
+    }
+
+    if (!isCombo && customData?.isVeggie) {
+      detailParts.unshift(`🌱 Veggie`);
     }
 
     const meatSuffix = !isCombo && customData?.meatCount ? ` x${customData.meatCount}` : "";

@@ -65,6 +65,10 @@ export function useAllCombos() {
             (r) => r.rule_type === "allowed_meat_count",
           );
 
+          const noFriesRule = slot.combo_slots_rules.find(
+            (r) => r.rule_type === "no_fries",
+          );
+
           return {
             id: slot.id,
             combo_id: combo.id,
@@ -82,6 +86,7 @@ export function useAllCombos() {
               allowed_meat_count: allowedMeatRule
                 ? JSON.parse(allowedMeatRule.rule_value)
                 : undefined,
+              no_fries: noFriesRule?.rule_value === "true" ? true : undefined,
             },
           };
         }),
@@ -224,6 +229,75 @@ export function useCreateComboWithSlots() {
 
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["combos-full"] }); // ✅ Corregir
+      qc.invalidateQueries({ queryKey: ["combos"] });
+      qc.invalidateQueries({ queryKey: ["combo-slots"] });
+      qc.invalidateQueries({ queryKey: ["combo-slot-rules"] });
+    },
+  });
+}
+
+/* ===================================================== */
+/* ========== UPDATE COMBO + SLOTS + RULES ============= */
+/* ===================================================== */
+
+export function useUpdateComboWithSlots() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: CreateComboPayload & { id: string }) => {
+      const { id, ...rest } = payload;
+
+      /* 1. Actualizar campos básicos del combo */
+      const { error: comboError } = await supabase
+        .from("combos")
+        .update({ name: rest.name, price: rest.price, is_available: rest.is_available })
+        .eq("id", id);
+
+      if (comboError) throw comboError;
+
+      /* 2. Eliminar slots existentes (las reglas se borran en cascada) */
+      const { error: deleteError } = await supabase
+        .from("combo_slots")
+        .delete()
+        .eq("combo_id", id);
+
+      if (deleteError) throw deleteError;
+
+      /* 3. Recrear slots y reglas */
+      for (const slot of rest.slots) {
+        const { data: slotRow, error: slotError } = await supabase
+          .from("combo_slots")
+          .insert({
+            combo_id: id,
+            slot_type: slot.slot_type,
+            quantity: slot.quantity,
+            default_meat_quantity: slot.default_meat_quantity ?? null,
+          })
+          .select()
+          .single();
+
+        if (slotError) throw slotError;
+
+        if (slot.rules?.length) {
+          const rules: Omit<ComboSlotRule, "id" | "created_at">[] = slot.rules.map(
+            (rule) => ({
+              combo_slot_id: slotRow.id,
+              rule_type: rule.rule_type,
+              rule_value: rule.rule_value,
+            }),
+          );
+
+          const { error: rulesError } = await supabase
+            .from("combo_slots_rules")
+            .insert(rules);
+
+          if (rulesError) throw rulesError;
+        }
+      }
+    },
+
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["combos-full"] });
       qc.invalidateQueries({ queryKey: ["combos"] });
       qc.invalidateQueries({ queryKey: ["combo-slots"] });
       qc.invalidateQueries({ queryKey: ["combo-slot-rules"] });

@@ -36,6 +36,7 @@ export class OrderDataTransformer {
 
       const customizationData = {
         meatCount: item.meatCount,
+        isVeggie: item.isVeggie ?? false,
         friesQuantity: item.friesQuantity,
         friesAdjustment,
         removedIngredients: item.removedIngredients,
@@ -121,6 +122,7 @@ export class OrderDataTransformer {
               burgerId: b.burger.id,
               name: b.burger.name,
               meatCount: b.meatCount,
+              isVeggie: b.isVeggie ?? false,
               friesQuantity: b.friesQuantity,
               friesAdjustment: friesExtra
                 ? (b.friesQuantity - (b.burger.default_fries_quantity ?? 1)) *
