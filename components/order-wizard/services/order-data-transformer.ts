@@ -8,7 +8,7 @@ interface SelectedComboSlot {
   maxQuantity: number;
   defaultMeatCount?: number;
   burgers: SelectedBurger[];
-  selectedExtra: { id: string; name: string; price: number } | null;
+  selectedExtras: Array<{ id: string; name: string; price: number }>;
 }
 
 interface SelectedCombo {
@@ -93,7 +93,9 @@ export class OrderDataTransformer {
           let friesAdjustment = 0;
           if (friesExtra) {
             const referenceFriesCount =
-              burger.burger.default_fries_quantity ?? 1;
+              burger.referenceFriesQuantity ??
+              burger.burger.default_fries_quantity ??
+              1;
             const friesDiff = burger.friesQuantity - referenceFriesCount;
             friesAdjustment = friesDiff * friesExtra.price;
           }
@@ -102,9 +104,7 @@ export class OrderDataTransformer {
             (burgerExtras + meatAdjustment + friesAdjustment) * burger.quantity;
         });
 
-        if (slot.selectedExtra && slot.selectedExtra.price > 0) {
-          comboSubtotal += slot.selectedExtra.price * c.quantity;
-        }
+        // Drink/side slots are included in the combo price — no extra charge
       });
 
       return {
@@ -125,7 +125,7 @@ export class OrderDataTransformer {
               isVeggie: b.isVeggie ?? false,
               friesQuantity: b.friesQuantity,
               friesAdjustment: friesExtra
-                ? (b.friesQuantity - (b.burger.default_fries_quantity ?? 1)) *
+                ? (b.friesQuantity - (b.referenceFriesQuantity ?? b.burger.default_fries_quantity ?? 1)) *
                   friesExtra.price *
                   b.quantity
                 : 0,
@@ -138,13 +138,11 @@ export class OrderDataTransformer {
                 price: ext.extra.price,
               })),
             })),
-            selectedExtra: s.selectedExtra
-              ? {
-                  id: s.selectedExtra.id,
-                  name: s.selectedExtra.name,
-                  price: s.selectedExtra.price,
-                }
-              : null,
+            selectedExtras: (s.selectedExtras ?? []).map((e) => ({
+              id: e.id,
+              name: e.name,
+              price: e.price,
+            })),
           })),
         ),
         extras: [],

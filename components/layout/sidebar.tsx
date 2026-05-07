@@ -38,13 +38,13 @@ const pacifico = Pacifico({
 
 const navigation = [
   { name: "Pedidos", href: "/", icon: LayoutDashboard },
-  { name: "Historial", href: "/orders", icon: ClipboardList },
-  { name: "Rendimiento", href: "/analytics", icon: BarChart3 },
+  { name: "Historial", href: "/historial", icon: ClipboardList },
+  { name: "Rendimiento", href: "/rendimiento", icon: BarChart3 },
   { name: "Clientes", href: "/clientes", icon: User },
   { name: "Menú", href: "/menu", icon: UtensilsCrossed },
   { name: "Combos", href: "/combos", icon: Component },
   { name: "Extras", href: "/extras", icon: Plus },
-  { name: "Precios", href: "/pricing", icon: DollarSign },
+  { name: "Precios", href: "/precios", icon: DollarSign },
 ];
 
 export function AppSidebar() {
@@ -52,45 +52,33 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" variant="floating" className="ios-sidebar">
-      <SidebarContent className="py-4">
-        <SidebarHeader>
-          <div className="flex items-center gap-3">
-            <Image
-              src="/jebbs.jpg"
-              alt="Logo"
-              width={48}
-              height={48}
-              className="rounded-full"
-            />
-
-            {/* Texto solo cuando el sidebar está abierto */}
-            <div
-              className="
-        flex flex-col leading-tight
-        transition-all duration-200
-        group-data-[collapsible=icon]:hidden
-      "
-            >
-              <span
-                className={cn(
-                  baloo.className,
-                  "text-lg font-bold tracking-wide",
-                )}
-              >
-                Jebbs
-              </span>
-
-              <span
-                className={cn(
-                  pacifico.className,
-                  "text-base text-(--color-jebbs) -mt-1",
-                )}
-              >
-                Burgers
-              </span>
-            </div>
+      <SidebarHeader className="pb-0">
+        <div className="flex items-center gap-3 px-1 py-2">
+          <Image
+            src="/jebbs.jpg"
+            alt="Logo"
+            width={48}
+            height={48}
+            className="rounded-full shrink-0"
+          />
+          <div
+            className="
+              flex flex-col leading-tight
+              transition-all duration-200
+              group-data-[collapsible=icon]:hidden
+            "
+          >
+            <span className={cn(baloo.className, "text-lg font-bold tracking-wide")}>
+              Jebbs
+            </span>
+            <span className={cn(pacifico.className, "text-base text-(--color-jebbs) -mt-1")}>
+              Burgers
+            </span>
           </div>
-        </SidebarHeader>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

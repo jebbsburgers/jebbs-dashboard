@@ -26,7 +26,7 @@ export function useComboSelection() {
           minQuantity: slot.rules?.min_quantity ?? Number(slot.quantity),
           rules: slot.rules,
           burgers: [],
-          selectedExtra: null,
+          selectedExtras: [],
         })),
       },
     ]);
@@ -433,6 +433,33 @@ export function useComboSelection() {
 
   /* ================= EXTRAS FOR SLOTS ================= */
 
+  const removeOneExtraFromSlot = (
+    comboId: string,
+    slotId: string,
+    extra: Extra,
+  ) => {
+    setSelectedCombos((prev) =>
+      prev.map((c) =>
+        c.id !== comboId
+          ? c
+          : {
+              ...c,
+              slots: c.slots.map((s) => {
+                if (s.slotId !== slotId) return s;
+                const idx = s.selectedExtras.findIndex(
+                  (e) => e.id === extra.id,
+                );
+                if (idx === -1) return s;
+                return {
+                  ...s,
+                  selectedExtras: s.selectedExtras.filter((_, i) => i !== idx),
+                };
+              }),
+            },
+      ),
+    );
+  };
+
   const selectExtraForSlot = (
     comboId: string,
     slotId: string,
@@ -444,14 +471,32 @@ export function useComboSelection() {
           ? c
           : {
               ...c,
-              slots: c.slots.map((s) =>
-                s.slotId !== slotId
-                  ? s
-                  : {
-                      ...s,
-                      selectedExtra: extra,
-                    },
-              ),
+              slots: c.slots.map((s) => {
+                if (s.slotId !== slotId) return s;
+
+                const totalSelected = s.selectedExtras.length;
+                const itemCount = s.selectedExtras.filter(
+                  (e) => e.id === extra.id,
+                ).length;
+
+                if (s.maxQuantity === 1) {
+                  // Single-select: same item → deselect, different → replace
+                  return {
+                    ...s,
+                    selectedExtras: itemCount > 0 ? [] : [extra],
+                  };
+                }
+
+                // Multi-select: card click siempre agrega si hay espacio
+                if (totalSelected < s.maxQuantity) {
+                  return {
+                    ...s,
+                    selectedExtras: [...s.selectedExtras, extra],
+                  };
+                }
+
+                return s;
+              }),
             },
       ),
     );
@@ -503,6 +548,7 @@ export function useComboSelection() {
 
     // Extras for slots
     selectExtraForSlot,
+    removeOneExtraFromSlot,
 
     // Helpers
     loadCombos,

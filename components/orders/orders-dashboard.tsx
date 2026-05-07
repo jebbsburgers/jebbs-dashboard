@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { Header } from "@/components/layout/header";
 import { OrderColumn } from "./order-column";
 import { OrderDetailsModal } from "./order-details-modal";
@@ -47,6 +48,8 @@ export function OrdersDashboard() {
 
   const [orderIdToEdit, setOrderIdToEdit] = useState<string | null>(null);
   const { data: orderToEdit } = useOrderForEdit(orderIdToEdit);
+
+  const [activeTab, setActiveTab] = useState<"new" | "ready">("new");
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -185,8 +188,68 @@ export function OrdersDashboard() {
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               >
-                <div className="flex-1 min-h-0 ">
-                  <div className="grid h-full min-h-0 grid-cols-2 gap-6">
+                <div className="flex-1 min-h-0">
+                  {/* Mobile: tabs */}
+                  <div className="flex flex-col h-full md:hidden">
+                    <div className="flex shrink-0 border-b border-border mb-4 gap-1">
+                      <button
+                        onClick={() => setActiveTab("new")}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                          activeTab === "new"
+                            ? "border-primary text-foreground"
+                            : "border-transparent text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+                        Nuevos
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                          {sortedOrders.filter((o) => o.status === "new").length}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("ready")}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                          activeTab === "ready"
+                            ? "border-primary text-foreground"
+                            : "border-transparent text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <span className="h-2 w-2 rounded-full bg-green-500" />
+                        Listos
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                          {sortedOrders.filter((o) => o.status === "ready").length}
+                        </span>
+                      </button>
+                    </div>
+                    <div className="flex-1 min-h-0">
+                      {activeTab === "new" ? (
+                        <OrderColumn
+                          title="Nuevos"
+                          status="new"
+                          orders={sortedOrders}
+                          onViewDetails={(o) => { setSelectedOrder(o); setDetailsOpen(true); }}
+                          onEditOrder={handleEditOrder}
+                          onChangeStatus={handleChangeStatus}
+                          accentColor="bg-blue-500"
+                        />
+                      ) : (
+                        <OrderColumn
+                          title="Listos"
+                          status="ready"
+                          orders={sortedOrders}
+                          onViewDetails={(o) => { setSelectedOrder(o); setDetailsOpen(true); }}
+                          onEditOrder={handleEditOrder}
+                          onChangeStatus={handleChangeStatus}
+                          accentColor="bg-green-500"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Desktop: side-by-side grid */}
+                  <div className="hidden md:grid h-full min-h-0 md:grid-cols-2 gap-6">
                     <OrderColumn
                       title="Nuevos"
                       status="new"

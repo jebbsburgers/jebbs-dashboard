@@ -8,7 +8,9 @@ import { CreateCustomerDialog } from "@/components/customers/create-customer-dia
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Users } from "lucide-react";
+import { ArrowLeft, Plus, Search, Users } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import type { Customer } from "@/lib/types";
 
 const PAGE_SIZE = 8;
@@ -18,6 +20,7 @@ export function CustomersDashboard() {
   const [page, setPage] = useState(1);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const { data: customers = [], isLoading } = useCustomers(search);
 
@@ -36,29 +39,40 @@ export function CustomersDashboard() {
         subtitle="Administrá clientes y sus direcciones"
       />
 
-      {/* FILTER BAR */}
-      <div className="shrink-0 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre o teléfono..."
-              value={search}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-9"
-            />
+      {/* FILTER BAR — hidden on mobile when viewing detail */}
+      {(!isMobile || !selectedCustomer) && (
+        <div className="shrink-0 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nombre o teléfono..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo
+            </Button>
           </div>
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo
-          </Button>
         </div>
-      </div>
+      )}
 
       {/* MAIN */}
       <div className="flex-1 min-h-0 flex gap-4">
-        {/* Left panel */}
-        <div className="w-96 shrink-0 flex flex-col min-h-0 rounded-md ios-glass bg-card">
+        {/* Left panel — full width on mobile list view, hidden on mobile detail view */}
+        <div
+          className={cn(
+            "flex flex-col min-h-0 rounded-md ios-glass bg-card",
+            isMobile
+              ? selectedCustomer
+                ? "hidden"
+                : "w-full"
+              : "w-96 shrink-0",
+          )}
+        >
           <div className="shrink-0 p-3 border-b">
             <p className="text-xs text-muted-foreground">
               {customers.length} cliente{customers.length !== 1 ? "s" : ""}
@@ -102,14 +116,34 @@ export function CustomersDashboard() {
           )}
         </div>
 
-        {/* Right panel */}
-        <div className="flex-1 min-h-0 overflow-y-auto rounded-md ios-glass bg-card">
+        {/* Right panel — full width on mobile detail view, hidden on mobile list view */}
+        <div
+          className={cn(
+            "min-h-0 overflow-y-auto rounded-md ios-glass bg-card mt-10 md:mt-0",
+            isMobile ? (selectedCustomer ? "flex-1" : "hidden") : "flex-1",
+          )}
+        >
           {selectedCustomer ? (
-            <CustomerDetail
-              customer={selectedCustomer}
-              onCustomerUpdated={setSelectedCustomer}
-              onCustomerDeleted={() => setSelectedCustomer(null)}
-            />
+            <>
+              {isMobile && (
+                <div className="sticky top-0 z-10 flex items-center border-b bg-card px-2 py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedCustomer(null)}
+                    className="gap-1.5"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Clientes
+                  </Button>
+                </div>
+              )}
+              <CustomerDetail
+                customer={selectedCustomer}
+                onCustomerUpdated={setSelectedCustomer}
+                onCustomerDeleted={() => setSelectedCustomer(null)}
+              />
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
               <Users className="h-12 w-12 opacity-20" />

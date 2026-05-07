@@ -9,11 +9,19 @@ function getDefaultDeliveryTime(): string {
   return `${hours}:${minutes}`;
 }
 
+const DEFAULT_DELIVERY_FEE_KEY = "jebbs_default_delivery_fee";
+
+function getDefaultDeliveryFee(): number {
+  if (typeof window === "undefined") return 2000;
+  const stored = localStorage.getItem(DEFAULT_DELIVERY_FEE_KEY);
+  return stored ? Number(stored) : 2000;
+}
+
 export function useOrderSettings() {
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">(
     "pickup",
   );
-  const [deliveryFee, setDeliveryFee] = useState(2000);
+  const [deliveryFee, setDeliveryFee] = useState(getDefaultDeliveryFee);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "transfer">(
     "cash",
   );
@@ -26,7 +34,7 @@ export function useOrderSettings() {
 
   const reset = () => {
     setDeliveryType("delivery");
-    setDeliveryFee(2000);
+    setDeliveryFee(getDefaultDeliveryFee());
     setPaymentMethod("transfer");
     setDiscountType("none");
     setDiscountValue(0);

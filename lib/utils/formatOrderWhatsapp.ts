@@ -118,10 +118,15 @@ export function formatOrderForWhatsapp(order: Order) {
             }
           });
         }
-        if (slot.selectedExtra) {
-          const label = slot.slotType === "drink" ? "🥤" : "➕";
-          comboLines.push(`   ${label} ${slot.selectedExtra.name}`);
-        }
+        const extras = Array.isArray(slot.selectedExtras)
+          ? slot.selectedExtras
+          : slot.selectedExtra
+            ? [slot.selectedExtra]
+            : [];
+        extras.forEach((se: any) => {
+          const label = slot.slotType === "drink" ? "🥤" : slot.slotType === "side" ? "🍗" : "➕";
+          comboLines.push(`   ${label} ${se.name}`);
+        });
       });
     }
 

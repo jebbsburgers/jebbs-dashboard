@@ -34,11 +34,12 @@ interface CombosStepProps {
         removedIngredients: string[];
         selectedExtras: { extra: Extra; quantity: number }[];
       }>;
-      selectedExtra: Extra | null;
+      selectedExtras: Extra[];
     }>;
   }>;
 
   availableBurgers: Burger[];
+  availableSides: Extra[];
 
   getRemainingQuantity: (comboId: string, slotId: string) => number;
   canAddBurgerToSlot: (comboId: string, slotId: string, burger: Burger) => boolean;
@@ -54,6 +55,7 @@ interface CombosStepProps {
   onToggleBurgerExtra: (comboId: string, slotId: string, burgerItemId: string, extra: Extra) => void;
   onUpdateBurgerExtraQty: (comboId: string, slotId: string, burgerItemId: string, extraId: string, delta: number) => void;
   onSelectExtraForSlot: (comboId: string, slotId: string, extra: Extra) => void;
+  onRemoveExtraFromSlot: (comboId: string, slotId: string, extra: Extra) => void;
 
   expandedBurgerId: string | null;
   onToggleBurgerExpanded: (burgerItemId: string) => void;
@@ -69,6 +71,7 @@ export function CombosStep({
   onRemoveCombo,
   selectedCombos,
   availableBurgers,
+  availableSides,
   getRemainingQuantity,
   canAddBurgerToSlot,
   onAddBurgerToSlot,
@@ -82,6 +85,7 @@ export function CombosStep({
   onToggleBurgerExtra,
   onUpdateBurgerExtraQty,
   onSelectExtraForSlot,
+  onRemoveExtraFromSlot,
   expandedBurgerId,
   onToggleBurgerExpanded,
   meatExtra,
@@ -245,9 +249,13 @@ export function CombosStep({
                     <ExtraSelector
                       title="Elegir Bebida"
                       extras={drinkExtras}
-                      selectedExtraId={slot.selectedExtra?.id}
+                      selectedExtraIds={slot.selectedExtras.map((e) => e.id)}
+                      maxQuantity={slot.maxQuantity}
                       onSelect={(extra) =>
                         onSelectExtraForSlot(comboInstance.id, slot.slotId, extra)
+                      }
+                      onRemoveOne={(extra) =>
+                        onRemoveExtraFromSlot(comboInstance.id, slot.slotId, extra)
                       }
                       required={slot.minQuantity > 0}
                     />
@@ -257,16 +265,20 @@ export function CombosStep({
             }
 
             if (slot.slotType === "side") {
-              const sideExtras = extrasByCategory["sides"] || [];
+              const sideExtras = availableSides;
               return (
                 <Card key={slot.slotId}>
                   <CardContent className="p-4">
                     <ExtraSelector
                       title="Elegir Acompañamiento"
                       extras={sideExtras}
-                      selectedExtraId={slot.selectedExtra?.id}
+                      selectedExtraIds={slot.selectedExtras.map((e) => e.id)}
+                      maxQuantity={slot.maxQuantity}
                       onSelect={(extra) =>
                         onSelectExtraForSlot(comboInstance.id, slot.slotId, extra)
+                      }
+                      onRemoveOne={(extra) =>
+                        onRemoveExtraFromSlot(comboInstance.id, slot.slotId, extra)
                       }
                       required={slot.minQuantity > 0}
                     />

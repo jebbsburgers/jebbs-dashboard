@@ -221,19 +221,36 @@ function loadCombos(
             })
             .filter(Boolean);
 
-          let selectedExtra = null;
-          if (slotData.selectedExtra) {
-            const extra = allExtras.find(
+          // Backward compat: old orders used selectedExtra (singular)
+          let selectedExtras: Extra[] = [];
+          if (Array.isArray(slotData.selectedExtras)) {
+            selectedExtras = slotData.selectedExtras.map((se: any) => {
+              const found = allExtras.find((e) => e.id === se.id);
+              return (
+                found || {
+                  id: se.id,
+                  name: se.name,
+                  price: se.price || 0,
+                  category: "drink" as const,
+                  is_available: true,
+                  created_at: new Date().toISOString(),
+                }
+              );
+            });
+          } else if (slotData.selectedExtra) {
+            const found = allExtras.find(
               (e) => e.id === slotData.selectedExtra.id,
             );
-            selectedExtra = extra || {
-              id: slotData.selectedExtra.id,
-              name: slotData.selectedExtra.name,
-              price: slotData.selectedExtra.price || 0,
-              category: "drink" as const,
-              is_available: true,
-              created_at: new Date().toISOString(),
-            };
+            selectedExtras = [
+              found || {
+                id: slotData.selectedExtra.id,
+                name: slotData.selectedExtra.name,
+                price: slotData.selectedExtra.price || 0,
+                category: "drink" as const,
+                is_available: true,
+                created_at: new Date().toISOString(),
+              },
+            ];
           }
 
           return {
@@ -247,7 +264,7 @@ function loadCombos(
             defaultMeatCount: Number(originalSlot?.default_meat_quantity) ?? 2,
             rules: originalSlot?.rules || { min_quantity: 1, max_quantity: 1 },
             burgers,
-            selectedExtra,
+            selectedExtras,
           };
         })
         .filter(Boolean);

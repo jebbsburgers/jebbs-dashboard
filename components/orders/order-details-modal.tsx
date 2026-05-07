@@ -44,6 +44,12 @@ interface ComboSlot {
   slotId: string;
   slotType: SlotType;
   burgers: BurgerCustomization[];
+  selectedExtras?: Array<{
+    id: string;
+    name: string;
+    price: number;
+  }> | null;
+  /** @deprecated backward compat — use selectedExtras */
   selectedExtra?: {
     id: string;
     name: string;
@@ -274,32 +280,35 @@ export function OrderDetailsModal({
                                   </div>
                                 ))}
 
-                                {slot.selectedExtra &&
-                                  slot.slotType in slotMetaMap &&
+                                {slot.slotType in slotMetaMap &&
                                   (() => {
+                                    // Backward compat: support both selectedExtras[] and legacy selectedExtra
+                                    const extras: Array<{ id?: string; name: string; price: number }> =
+                                      Array.isArray(slot.selectedExtras) && slot.selectedExtras.length > 0
+                                        ? slot.selectedExtras
+                                        : slot.selectedExtra
+                                          ? [slot.selectedExtra]
+                                          : [];
+
+                                    if (extras.length === 0) return null;
+
                                     const meta =
                                       slotMetaMap[
                                         slot.slotType as keyof typeof slotMetaMap
                                       ];
 
-                                    return (
-                                      <div className="mb-2">
+                                    return extras.map((se, i) => (
+                                      <div key={se.id ?? i} className="mb-2">
                                         <p className="font-medium text-sm">
-                                          {meta.icon} {meta.label}:{" "}
-                                          {slot.selectedExtra.quantity}x{" "}
-                                          {slot.selectedExtra.name}
+                                          {meta.icon} {meta.label}: {se.name}
                                         </p>
-
-                                        {slot.selectedExtra.price > 0 && (
+                                        {se.price > 0 && (
                                           <p className="text-xs text-muted-foreground">
-                                            +
-                                            {formatCurrency(
-                                              slot.selectedExtra.price,
-                                            )}
+                                            +{formatCurrency(se.price)}
                                           </p>
                                         )}
                                       </div>
-                                    );
+                                    ));
                                   })()}
                               </div>
                             );

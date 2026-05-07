@@ -141,7 +141,7 @@ export function useOrderWizard({
           slot.slotType === "side" ||
           slot.slotType === "nuggets"
         ) {
-          return slot.selectedExtra !== null;
+          return slot.selectedExtras.length >= slot.minQuantity;
         }
         return true;
       });

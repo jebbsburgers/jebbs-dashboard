@@ -47,7 +47,11 @@ const EMPTY_FORM = {
   burgers_default_meat_quantity: 2,
 
   include_drink: false,
-  include_nuggets: false,
+  drink_qty: 1,
+
+  include_side: false,
+  side_qty: 1,
+
   include_fries: true,
 };
 
@@ -89,8 +93,10 @@ export default function CombosPage() {
   const openEdit = (combo: Combo) => {
     const c = combo as import("@/lib/types/combo-types").ComboWithSlots;
     const burgerSlot = c.slots?.find((s) => s.slot_type === "burger");
-    const hasDrink = c.slots?.some((s) => s.slot_type === "drink") ?? false;
-    const hasNuggets = c.slots?.some((s) => s.slot_type === "nuggets") ?? false;
+    const drinkSlot = c.slots?.find((s) => s.slot_type === "drink");
+    const sideSlot = c.slots?.find(
+      (s) => s.slot_type === "side" || s.slot_type === "nuggets",
+    );
 
     setEditing(combo);
     setForm({
@@ -99,8 +105,10 @@ export default function CombosPage() {
       is_available: combo.is_available,
       burgers_qty: burgerSlot?.quantity ?? 0,
       burgers_default_meat_quantity: burgerSlot?.default_meat_quantity ?? 2,
-      include_drink: hasDrink,
-      include_nuggets: hasNuggets,
+      include_drink: !!drinkSlot,
+      drink_qty: drinkSlot?.quantity ?? 1,
+      include_side: !!sideSlot,
+      side_qty: sideSlot?.quantity ?? 1,
       include_fries: !burgerSlot?.rules?.no_fries,
     });
     setDialogOpen(true);
@@ -129,10 +137,10 @@ export default function CombosPage() {
         ]
       : []),
     ...(form.include_drink
-      ? [{ slot_type: "drink", quantity: 1, required: false }]
+      ? [{ slot_type: "drink", quantity: form.drink_qty, required: false }]
       : []),
-    ...(form.include_nuggets
-      ? [{ slot_type: "nuggets", quantity: 1, required: false }]
+    ...(form.include_side
+      ? [{ slot_type: "side", quantity: form.side_qty, required: false }]
       : []),
   ];
 
@@ -345,24 +353,66 @@ export default function CombosPage() {
                 <Label>Incluye papas</Label>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={form.include_drink}
-                  onCheckedChange={(v) =>
-                    setForm({ ...form, include_drink: v })
-                  }
-                />
-                <Label>Incluye bebida</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={form.include_drink}
+                    onCheckedChange={(v) =>
+                      setForm({ ...form, include_drink: v })
+                    }
+                  />
+                  <Label>Incluye bebida</Label>
+                </div>
+                {form.include_drink && (
+                  <div className="ml-10 space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Cantidad de bebidas
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      className="w-24"
+                      value={form.drink_qty}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          drink_qty: Math.max(1, Number(e.target.value)),
+                        })
+                      }
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={form.include_nuggets}
-                  onCheckedChange={(v) =>
-                    setForm({ ...form, include_nuggets: v })
-                  }
-                />
-                <Label>Incluye nuggets</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={form.include_side}
+                    onCheckedChange={(v) =>
+                      setForm({ ...form, include_side: v })
+                    }
+                  />
+                  <Label>Incluye acompañamiento</Label>
+                </div>
+                {form.include_side && (
+                  <div className="ml-10 space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Cantidad de acompañamientos
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      className="w-24"
+                      value={form.side_qty}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          side_qty: Math.max(1, Number(e.target.value)),
+                        })
+                      }
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

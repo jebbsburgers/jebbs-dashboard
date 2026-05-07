@@ -61,13 +61,14 @@ interface SummaryStepProps {
         quantity: number;
         meatCount: number;
         friesQuantity: number;
+        referenceFriesQuantity?: number;
         removedIngredients: string[];
         selectedExtras: Array<{
           extra: { id: string; name: string; price: number };
           quantity: number;
         }>;
       }>;
-      selectedExtra: { id: string; name: string; price: number } | null;
+      selectedExtras: Array<{ id: string; name: string; price: number }>;
     }>;
   }>;
 
@@ -201,32 +202,6 @@ export function SummaryStep({
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Payment Method */}
-      <Card className="bg-card">
-        <CardContent className="p-4 space-y-3">
-          <h3 className="text-sm font-medium">Método de pago</h3>
-          <RadioGroup
-            value={paymentMethod}
-            onValueChange={(value: "cash" | "transfer") =>
-              onPaymentMethodChange(value)
-            }
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="cash" id="cash" />
-              <Label htmlFor="cash" className="font-normal cursor-pointer">
-                💵 Efectivo
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="transfer" id="transfer" />
-              <Label htmlFor="transfer" className="font-normal cursor-pointer">
-                🏦 Transferencia
-              </Label>
-            </div>
-          </RadioGroup>
         </CardContent>
       </Card>
 
@@ -422,6 +397,33 @@ export function SummaryStep({
         </CardContent>
       </Card>
 
+      
+      {/* Payment Method */}
+      <Card className="bg-card">
+        <CardContent className="p-4 space-y-3">
+          <h3 className="text-sm font-medium">Método de pago</h3>
+          <RadioGroup
+            value={paymentMethod}
+            onValueChange={(value: "cash" | "transfer") =>
+              onPaymentMethodChange(value)
+            }
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="cash" id="cash" />
+              <Label htmlFor="cash" className="font-normal cursor-pointer">
+                💵 Efectivo
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="transfer" id="transfer" />
+              <Label htmlFor="transfer" className="font-normal cursor-pointer">
+                🏦 Transferencia
+              </Label>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
       {/* Order Summary */}
       <Card className="bg-card">
         <CardContent className="p-4">
@@ -558,7 +560,7 @@ export function SummaryStep({
                       {slot.burgers.map((b, burgerIndex) => {
                         const referenceMeatCount = slot.defaultMeatCount ?? b.burger.default_meat_quantity;
                         const meatDiff = b.meatCount - referenceMeatCount;
-                        const referenceFriesCount = b.burger.default_fries_quantity ?? 1;
+                        const referenceFriesCount = b.referenceFriesQuantity ?? b.burger.default_fries_quantity ?? 1;
                         const friesDiff = b.friesQuantity - referenceFriesCount;
                         const comboSizeLabel =
                           b.meatCount === 1 ? "Simple"
@@ -613,14 +615,19 @@ export function SummaryStep({
                         );
                       })}
 
-                      {slot.selectedExtra && (
-                        <div className="ml-4">
+                      {slot.selectedExtras?.map((extra) => (
+                        <div key={extra.id} className="ml-4">
                           <p className="text-sm font-medium text-muted-foreground">
-                            • {slot.slotType === "drink" ? "Bebida: " : ""}
-                            {slot.selectedExtra.name}
+                            •{" "}
+                            {slot.slotType === "drink"
+                              ? "Bebida: "
+                              : slot.slotType === "side"
+                                ? "Acomp.: "
+                                : ""}
+                            {extra.name}
                           </p>
                         </div>
-                      )}
+                      ))}
                     </div>
                   ))}
                 </div>

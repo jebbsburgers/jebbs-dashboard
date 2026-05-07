@@ -7,11 +7,11 @@ interface SelectedComboSlot {
   maxQuantity: number;
   defaultMeatCount?: number;
   burgers: SelectedBurger[];
-  selectedExtra?: {
+  selectedExtras?: Array<{
     id: string;
     name: string;
     price: number;
-  } | null;
+  }>;
 }
 
 interface SelectedCombo {
@@ -97,12 +97,8 @@ export class OrderPriceCalculator {
           );
         }, 0);
 
-        let selectedExtraPrice = 0;
-        if (slot.selectedExtra && slot.selectedExtra.price > 0) {
-          selectedExtraPrice = slot.selectedExtra.price;
-        }
-
-        return slotAcc + slotTotal + selectedExtraPrice;
+        // Drink/side slots are included in the combo price — no extra charge
+        return slotAcc + slotTotal;
       }, 0);
 
       return comboAcc + comboBasePrice + comboExtrasAndMore;

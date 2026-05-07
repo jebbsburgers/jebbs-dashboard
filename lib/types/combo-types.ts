@@ -102,7 +102,7 @@ export interface SelectedComboSlot {
     allowed_meat_count?: number[];
   };
   burgers: SelectedBurger[];
-  selectedExtra: Extra | null;
+  selectedExtras: Extra[];
 }
 
 /**

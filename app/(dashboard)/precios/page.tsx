@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import { useAllBurgers, useUpdateBurger } from "@/lib/hooks/use-menu-crud";
 import { useAllExtras, useUpdateExtra } from "@/lib/hooks/use-menu-crud";
 import { formatCurrency } from "@/lib/utils/format";
 import type { ExtraCategory } from "@/lib/types";
+
+const DEFAULT_DELIVERY_FEE_KEY = "jebbs_default_delivery_fee";
 
 const categoryLabels: Record<ExtraCategory, string> = {
   extra: "Extras",
@@ -29,6 +31,22 @@ export default function PricingPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
+
+  const [defaultDeliveryFee, setDefaultDeliveryFee] = useState(2000);
+  const [editingDeliveryFee, setEditingDeliveryFee] = useState(false);
+  const [deliveryFeeInput, setDeliveryFeeInput] = useState("");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(DEFAULT_DELIVERY_FEE_KEY);
+    if (stored) setDefaultDeliveryFee(Number(stored));
+  }, []);
+
+  const saveDeliveryFee = () => {
+    const value = Math.max(0, Number(deliveryFeeInput));
+    localStorage.setItem(DEFAULT_DELIVERY_FEE_KEY, String(value));
+    setDefaultDeliveryFee(value);
+    setEditingDeliveryFee(false);
+  };
 
   const handleStartEdit = (id: string, currentPrice: number) => {
     setEditingId(id);
@@ -61,7 +79,69 @@ export default function PricingPage() {
     <div className="flex h-screen flex-col">
       <Header title="Precios" subtitle="Configuración central de precios" />
 
-      <div className="flex-1 overflow-auto py-6">
+      <div className="flex-1 overflow-auto py-6 space-y-6">
+        {/* Configuración general */}
+        <Card className="bg-card">
+          <CardHeader>
+            <CardTitle>Configuración general</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between rounded-lg bg-secondary/30 p-3">
+              <div>
+                <p className="font-medium">Costo de delivery por defecto</p>
+                <p className="text-xs text-muted-foreground">
+                  Se usa como valor inicial al crear un pedido con envío
+                </p>
+              </div>
+
+              {editingDeliveryFee ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={deliveryFeeInput}
+                    onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                    className="w-28"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveDeliveryFee();
+                      if (e.key === "Escape") setEditingDeliveryFee(false);
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-primary"
+                    onClick={saveDeliveryFee}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={() => setEditingDeliveryFee(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="font-bold text-primary"
+                  onClick={() => {
+                    setDeliveryFeeInput(defaultDeliveryFee.toString());
+                    setEditingDeliveryFee(true);
+                  }}
+                >
+                  {formatCurrency(defaultDeliveryFee)}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="burgers">
           <TabsList className="mb-6">
             <TabsTrigger value="burgers">Hamburguesas</TabsTrigger>
