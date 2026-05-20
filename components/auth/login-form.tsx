@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Loader2, ShoppingBag, BarChart3, Users, Zap } from "lucide-react"
+import { Loader2, ShoppingBag, BarChart3, Users, Zap, Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
 
 const FEATURES = [
@@ -20,6 +20,7 @@ export function LoginForm() {
   const router = useRouter()
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -119,21 +120,30 @@ export function LoginForm() {
 
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-zinc-300 text-sm">Contraseña</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus-visible:ring-zinc-500 focus-visible:border-zinc-500 h-10"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus-visible:ring-zinc-500 focus-visible:border-zinc-500 h-10 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
             <Button
               type="submit"
-              className="w-full h-10 bg-white text-zinc-900 hover:bg-zinc-100 font-medium"
+              className="w-full h-10 bg-white text-zinc-900 hover:bg-zinc-100 font-medium cursor-pointer"
               disabled={loading}
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
