@@ -1,6 +1,7 @@
 "use client";
 
 import type { Order, OrderStatus } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils/format";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -30,6 +31,7 @@ export function OrderColumn({
   onChangeStatus,
 }: OrderColumnProps) {
   const filteredOrders = orders.filter((order) => order.status === status);
+  const columnRevenue = filteredOrders.reduce((sum, o) => sum + (o.total_amount ?? 0), 0);
 
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -46,11 +48,20 @@ export function OrderColumn({
       <div className="shrink-0 flex items-center justify-between border-b border-border p-4">
         <div className="flex items-center gap-3">
           <div className={`h-2 w-2 rounded-full ${accentColor}`} />
-          <h2 className="font-semibold">{title}</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {title}
+          </h2>
         </div>
-        <span className="rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium">
-          {filteredOrders.length}
-        </span>
+        <div className="flex items-center gap-2">
+          {columnRevenue > 0 && (
+            <span className="text-xs text-muted-foreground font-mono">
+              {formatCurrency(columnRevenue)}
+            </span>
+          )}
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold">
+            {filteredOrders.length}
+          </span>
+        </div>
       </div>
       <div
         className="

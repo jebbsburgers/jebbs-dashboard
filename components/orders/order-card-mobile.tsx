@@ -31,6 +31,13 @@ const statusConfig = {
   canceled: { label: "Cancelado", className: "bg-red-500 text-white" },
 };
 
+const statusBorderColor: Record<string, string> = {
+  new: "border-l-blue-500",
+  ready: "border-l-green-500",
+  completed: "border-l-zinc-500",
+  canceled: "border-l-red-500",
+};
+
 interface OrderCardMobileProps {
   order: Order;
   onViewDetails: (order: Order) => void;
@@ -100,7 +107,7 @@ export function OrderCardMobile({
 
   return (
     // ✅ Eliminado "lg:hidden" — lo maneja el wrapper en SortableOrderCard
-    <Card className="bg-card">
+    <Card className={cn("bg-card border-l-4", statusBorderColor[status] ?? "border-l-border")}>
       <CardContent className="space-y-4">
         {/* HEADER */}
         <div className="flex items-center justify-between">
@@ -150,7 +157,7 @@ export function OrderCardMobile({
           <div className="flex flex-col items-end gap-1">
             {!isEditing ? (
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold">
+                <span className="text-xl font-bold font-mono">
                   {formatCurrency(order.total_amount)}
                 </span>
                 {canEdit && (

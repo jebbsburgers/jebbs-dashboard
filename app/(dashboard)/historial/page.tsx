@@ -218,7 +218,11 @@ export default function OrdersHistoryPage() {
           <Card className="min-w-50 bg-card">
             <CardContent className="flex items-center justify-between gap-2 p-4">
               <span className="text-sm text-muted-foreground">
-                Ingresos del día
+                {dateFilter === "today"
+                  ? "Ingresos del día"
+                  : dateFilter === "week"
+                    ? "Ingresos de la semana"
+                    : `Ingresos del ${format(customDate, "PPP", { locale: es })}`}
               </span>
               <span className="text-xl font-bold text-primary">
                 {formatCurrency(totalRevenue)}

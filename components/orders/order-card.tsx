@@ -33,6 +33,13 @@ const statusConfig = {
   canceled: { label: "Cancelado", className: "bg-red-500 text-white" },
 };
 
+const statusBorderColor: Record<string, string> = {
+  new: "border-l-blue-500",
+  ready: "border-l-green-500",
+  completed: "border-l-zinc-500",
+  canceled: "border-l-red-500",
+};
+
 interface OrderCardProps {
   order: Order;
   onViewDetails: (order: Order) => void;
@@ -108,7 +115,8 @@ export function OrderCard({
   return (
     <Card
       className={cn(
-        "transition-all hover:shadow-md cursor-grab bg-card",
+        "transition-all hover:shadow-md cursor-grab bg-card border-l-4",
+        statusBorderColor[status] ?? "border-l-border",
         isDragging && "rotate-1",
       )}
     >
@@ -176,7 +184,7 @@ export function OrderCard({
         <div className="flex items-center justify-between pt-3 border-t">
           {!isEditing ? (
             <div className="flex items-center gap-2">
-              <p className="text-2xl font-bold">
+              <p className="text-2xl font-bold font-mono">
                 {formatCurrency(order.total_amount)}
               </p>
               {canEdit && (

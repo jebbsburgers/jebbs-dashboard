@@ -42,7 +42,7 @@ export function SidebarLayout({
         <AppSidebar />
       </motion.div>
       <SidebarInset>
-        <main className="flex flex-1 min-h-0 flex-col p-4 md:p-2 container mx-auto">
+        <main className="flex flex-1 flex-col overflow-y-auto p-4 md:p-2 container mx-auto">
           {children}
         </main>
       </SidebarInset>

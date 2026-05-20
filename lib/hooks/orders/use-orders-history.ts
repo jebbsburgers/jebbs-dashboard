@@ -439,6 +439,7 @@ export interface ProductStats {
   totalFries: number;
   totalSides: number;
   totalCombos: number;
+  totalDrinks: number;
 }
 
 export function useProductStats(
@@ -472,7 +473,7 @@ export function useProductStats(
 
       if (ordersError) throw ordersError;
       if (!orders || orders.length === 0)
-        return { totalBurgers: 0, totalMedallones: 0, totalFries: 0, totalSides: 0, totalCombos: 0 };
+        return { totalBurgers: 0, totalMedallones: 0, totalFries: 0, totalSides: 0, totalCombos: 0, totalDrinks: 0 };
 
       const orderIds = orders.map((o) => o.id);
 
@@ -485,16 +486,17 @@ export function useProductStats(
 
       if (itemsError) throw itemsError;
 
-      let totalBurgers = 0, totalMedallones = 0, totalFries = 0, totalSides = 0, totalCombos = 0;
+      let totalBurgers = 0, totalMedallones = 0, totalFries = 0, totalSides = 0, totalCombos = 0, totalDrinks = 0;
 
       for (const item of items ?? []) {
         if (item.extra_id) {
-          // Standalone extra item (fries, sides, etc. ordered as main item)
+          // Standalone extra item (fries, sides, drink, etc. ordered as main item)
           const extra = item.extras as unknown as { category: string } | null;
           const category = extra?.category;
           if (category === "extra") totalMedallones += item.quantity;
           else if (category === "fries") totalFries += item.quantity;
           else if (category === "sides") totalSides += item.quantity;
+          else if (category === "drink") totalDrinks += item.quantity;
         } else if (item.combo_id) {
           // Combo item — parse customizations JSON to get per-burger meatCount and friesQuantity
           totalCombos += item.quantity;
@@ -531,10 +533,11 @@ export function useProductStats(
           if (category === "extra") totalMedallones += extraItem.quantity;
           else if (category === "fries") totalFries += extraItem.quantity;
           else if (category === "sides") totalSides += extraItem.quantity;
+          else if (category === "drink") totalDrinks += extraItem.quantity;
         }
       }
 
-      return { totalBurgers, totalMedallones, totalFries, totalSides, totalCombos };
+      return { totalBurgers, totalMedallones, totalFries, totalSides, totalCombos, totalDrinks };
     },
   });
 }

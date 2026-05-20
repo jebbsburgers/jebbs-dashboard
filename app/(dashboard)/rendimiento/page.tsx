@@ -427,13 +427,14 @@ export default function AnalyticsPage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-6">
                 {[
                   { label: "Burgers", value: productStats?.totalBurgers ?? 0, emoji: "🍔" },
                   { label: "Combos", value: productStats?.totalCombos ?? 0, emoji: "🎁" },
                   { label: "Medallones", value: productStats?.totalMedallones ?? 0, emoji: "🥩" },
                   { label: "Papas Fritas", value: productStats?.totalFries ?? 0, emoji: "🍟" },
                   { label: "Acompañamientos", value: productStats?.totalSides ?? 0, emoji: "🍗" },
+                  { label: "Bebidas", value: productStats?.totalDrinks ?? 0, emoji: "🥤" },
                 ].map((item) => (
                   <div
                     key={item.label}

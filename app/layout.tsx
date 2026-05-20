@@ -8,25 +8,12 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Burger Dashboard - Sistema de Operaciones",
-  description: "Dashboard de operaciones para restaurante de hamburguesas",
+  title: "Jebbs Burgers",
+  description: "Sistema de gestión de operaciones para Jebbs Burgers",
   generator: "v0.app",
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
+    icon: "/jebbs.jpg",
+    apple: "/jebbs.jpg",
   },
 };
 
@@ -37,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className="font-sans antialiased min-h-screen overflow-hidden">
+      <body className="font-sans antialiased min-h-screen">
         {children}
         <Analytics />
       </body>

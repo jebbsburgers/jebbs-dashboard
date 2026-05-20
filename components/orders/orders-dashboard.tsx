@@ -308,8 +308,8 @@ export function OrdersDashboard() {
 
       {/* FOOTER */}
       <div className="border border-border rounded-md bg-card p-4 min-h-17.5 shrink-0">
-        <div className="flex h-full items-center justify-between">
-          <div className="text-sm">
+        <div className="flex h-full items-center justify-between gap-4 overflow-hidden">
+          <div className="text-sm shrink-0">
             <span className="text-muted-foreground">
               Total pedidos del día:{" "}
             </span>
@@ -317,21 +317,23 @@ export function OrdersDashboard() {
           </div>
 
           {readyOrders.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 min-w-0 overflow-x-auto pb-2 pr-2">
+              <span className="text-sm text-muted-foreground shrink-0">
                 Pedidos listos:
               </span>
-              {readyOrders.map((order) => (
-                <Button
-                  key={order.id}
-                  size="sm"
-                  onClick={() => handleCompleteOrder(order)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <Check className="mr-1 h-4 w-4" />
-                  Completar #{order.order_number}
-                </Button>
-              ))}
+              <div className="flex gap-2 shrink-0">
+                {readyOrders.map((order) => (
+                  <Button
+                    key={order.id}
+                    size="sm"
+                    onClick={() => handleCompleteOrder(order)}
+                    className="bg-green-600 hover:bg-green-700 shrink-0 whitespace-nowrap"
+                  >
+                    <Check className="mr-1 h-4 w-4" />
+                    Completar #{order.order_number}
+                  </Button>
+                ))}
+              </div>
             </div>
           )}
         </div>
