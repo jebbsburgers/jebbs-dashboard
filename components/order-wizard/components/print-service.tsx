@@ -15,7 +15,7 @@ export function PrintServiceIndicator() {
 
   if (isChecking) {
     return (
-      <Badge variant="outline" className="gap-2">
+      <Badge variant="outline" className="gap-2 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700">
         <Printer className="h-3 w-3 animate-pulse" />
         Verificando...
       </Badge>

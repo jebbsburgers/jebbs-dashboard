@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Trash2, CalendarIcon, ExternalLink } from "lucide-react";
+import { Plus, Trash2, CalendarIcon, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   useExternalIncome,
   useCreateExternalIncome,
@@ -42,6 +42,10 @@ export function ExternalIncomePanel({ startDate, endDate }: ExternalIncomePanelP
   const createIncome = useCreateExternalIncome(startDate, endDate);
   const deleteIncome = useDeleteExternalIncome(startDate, endDate);
 
+  const PAGE_SIZE = 5;
+  const [page, setPage] = useState(1);
+
+  useEffect(() => { setPage(1); }, [startDate, endDate]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [amount, setAmount] = useState("");
@@ -49,6 +53,8 @@ export function ExternalIncomePanel({ startDate, endDate }: ExternalIncomePanelP
   const [selectedDate, setSelectedDate] = useState<string>(todayArStr());
 
   const totalExternal = incomes?.reduce((acc, e) => acc + Number(e.amount), 0) ?? 0;
+  const totalPages = Math.ceil((incomes?.length ?? 0) / PAGE_SIZE);
+  const paginated = incomes?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? [];
 
   function resetForm() {
     setAmount("");
@@ -90,7 +96,7 @@ export function ExternalIncomePanel({ startDate, endDate }: ExternalIncomePanelP
             <Button
               size="sm"
               variant="outline"
-              className="h-8 gap-1.5 text-xs"
+              className="h-8 gap-1.5 text-xs dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700"
               onClick={() => setDialogOpen(true)}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -110,7 +116,7 @@ export function ExternalIncomePanel({ startDate, endDate }: ExternalIncomePanelP
             </p>
           ) : (
             <div className="space-y-2">
-              {incomes.map((income) => (
+              {paginated.map((income) => (
                 <div
                   key={income.id}
                   className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-2.5"
@@ -135,6 +141,32 @@ export function ExternalIncomePanel({ startDate, endDate }: ExternalIncomePanelP
                   </Button>
                 </div>
               ))}
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-1 px-1">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {page} / {totalPages}
+                  </span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
 
               {totalExternal > 0 && (
                 <div className="flex items-center justify-between border-t pt-2 px-1">
