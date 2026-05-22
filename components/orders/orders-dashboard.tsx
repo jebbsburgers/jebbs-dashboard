@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/layout/header";
 import { OrderColumn } from "./order-column";
@@ -14,7 +14,13 @@ import {
 } from "@/lib/hooks/orders/use-orders";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Order } from "@/lib/types";
-import { ClipboardList, Check } from "lucide-react";
+import { ClipboardList, Check, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DndContext,
   type DragEndEvent,
@@ -157,6 +163,28 @@ export function OrdersDashboard() {
   };
 
   const readyOrders = sortedOrders.filter((o) => o.status === "ready");
+  const readyOrdersScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = readyOrdersScrollRef.current;
+    if (!el) return;
+    let target = el.scrollLeft;
+    let rafId: number;
+    const animate = () => {
+      const diff = target - el.scrollLeft;
+      if (Math.abs(diff) < 0.5) { el.scrollLeft = target; return; }
+      el.scrollLeft += diff * 0.12;
+      rafId = requestAnimationFrame(animate);
+    };
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      e.preventDefault();
+      target = Math.max(0, Math.min(el.scrollWidth - el.clientWidth, target + e.deltaY));
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(animate);
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => { el.removeEventListener("wheel", handleWheel); cancelAnimationFrame(rafId); };
+  }, [readyOrders]);
 
   return (
     <section className="flex flex-1 flex-col min-h-0">
@@ -308,7 +336,7 @@ export function OrdersDashboard() {
 
       {/* FOOTER */}
       <div className="border border-border rounded-md bg-card p-4 min-h-17.5 shrink-0">
-        <div className="flex h-full items-center justify-between gap-4 overflow-hidden">
+        <div className="flex h-full items-center justify-between gap-4">
           <div className="text-sm shrink-0">
             <span className="text-muted-foreground">
               Total pedidos del día:{" "}
@@ -317,22 +345,36 @@ export function OrdersDashboard() {
           </div>
 
           {readyOrders.length > 0 && (
-            <div className="flex items-center gap-2 min-w-0 overflow-x-auto pb-2 pr-2">
+            <div className="flex items-center gap-2 min-w-0">
               <span className="text-sm text-muted-foreground shrink-0">
                 Pedidos listos:
               </span>
-              <div className="flex gap-2 shrink-0">
-                {readyOrders.map((order) => (
-                  <Button
-                    key={order.id}
-                    size="sm"
-                    onClick={() => handleCompleteOrder(order)}
-                    className="bg-green-600 hover:bg-green-700 shrink-0 whitespace-nowrap"
-                  >
-                    <Check className="mr-1 h-4 w-4" />
-                    Completar #{order.order_number}
-                  </Button>
-                ))}
+              {readyOrders.length >= 4 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HelpCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Usá la ruedita del mouse para ver más pedidos</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <div ref={readyOrdersScrollRef} className="overflow-x-auto max-w-[620px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div className="flex gap-2">
+                  {readyOrders.map((order) => (
+                    <Button
+                      key={order.id}
+                      size="sm"
+                      onClick={() => handleCompleteOrder(order)}
+                      className="bg-green-600 hover:bg-green-700 shrink-0 whitespace-nowrap"
+                    >
+                      <Check className="mr-1 h-4 w-4" />
+                      Completar #{order.order_number}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
