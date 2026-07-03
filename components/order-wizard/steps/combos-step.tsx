@@ -216,24 +216,41 @@ export function CombosStep({
 
                     {remaining > 0 && (
                       <div className="grid grid-cols-2 gap-2">
-                        {availableBurgers?.map((burger) =>
-                          canAddBurgerToSlot(comboInstance.id, slot.slotId, burger) ? (
+                        {availableBurgers?.map((burger) => {
+                          if (!canAddBurgerToSlot(comboInstance.id, slot.slotId, burger))
+                            return null;
+
+                          const qty = slot.burgers.filter(
+                            (b) => b.burger.id === burger.id,
+                          ).length;
+
+                          return (
                             <Card
                               key={burger.id}
-                              className="cursor-pointer hover:shadow-sm"
+                              className={cn(
+                                "cursor-pointer transition-all bg-card relative",
+                                qty > 0
+                                  ? "ring-2 ring-primary border-primary animate-in zoom-in-95 duration-300"
+                                  : "hover:shadow-sm",
+                              )}
                               onClick={() =>
                                 onAddBurgerToSlot(comboInstance.id, slot.slotId, burger)
                               }
                             >
                               <CardContent className="p-3">
+                                {qty > 0 && (
+                                  <Badge className="absolute -top-2 -right-2 h-5 w-5 animate-in zoom-in-50 fade-in rounded-full p-0 flex items-center justify-center text-xs duration-200">
+                                    {qty}
+                                  </Badge>
+                                )}
                                 <p className="font-medium">{burger.name}</p>
                                 <p className="text-sm text-muted-foreground">
                                   {formatCurrency(burger.base_price)}
                                 </p>
                               </CardContent>
                             </Card>
-                          ) : null,
-                        )}
+                          );
+                        })}
                       </div>
                     )}
                   </CardContent>

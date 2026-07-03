@@ -22,6 +22,7 @@ import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
 import { useTogglePaymentStatus, useQuickPatchOrder } from "@/lib/hooks/orders/use-orders";
 import { cn } from "@/lib/utils";
 import { formatOrderForWhatsapp } from "@/lib/utils/formatOrderWhatsapp";
+import { formatOrderForDelivery } from "@/lib/utils/formatOrderDelivery";
 import { toast } from "sonner";
 
 const statusConfig = {
@@ -105,6 +106,13 @@ export function OrderCardMobile({
     toast.success("Pedido copiado para WhatsApp");
   };
 
+  const handleCopyDelivery = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = formatOrderForDelivery(order);
+    await navigator.clipboard.writeText(text);
+    toast.success("Pedido copiado para delivery");
+  };
+
   return (
     // ✅ Eliminado "lg:hidden" — lo maneja el wrapper en SortableOrderCard
     <Card className={cn("bg-card border-l-4", statusBorderColor[status] ?? "border-l-border")}>
@@ -117,13 +125,23 @@ export function OrderCardMobile({
 
           <div className="flex items-center gap-2">
             <Button
-              size="sm"
+              size="icon-sm"
               variant="outline"
-              className="bg-card"
+              className="bg-card rounded-full"
               onClick={handleCopy}
               title="Copiar para WhatsApp"
             >
               <Copy className="h-4 w-4" />
+            </Button>
+
+            <Button
+              size="icon-sm"
+              variant="outline"
+              className="bg-card rounded-full"
+              onClick={handleCopyDelivery}
+              title="Copiar para delivery"
+            >
+              🛵
             </Button>
 
             <button

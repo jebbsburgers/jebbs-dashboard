@@ -30,8 +30,14 @@ function loadCustomerData(order: OrderWithItems) {
 }
 
 function loadSettings(order: OrderWithItems) {
+  // 🔑 Si quedó "delivery" sin dirección guardada, mostrar como retiro en el local
+  const deliveryType: "delivery" | "pickup" =
+    order.delivery_type === "delivery" && !order.customer_address_id
+      ? "pickup"
+      : (order.delivery_type as "delivery" | "pickup");
+
   return {
-    deliveryType: order.delivery_type as "delivery" | "pickup",
+    deliveryType,
     deliveryFee: order.delivery_fee || 0,
     deliveryTime: order.delivery_time || "",
     paymentMethod: order.payment_method as "cash" | "transfer",

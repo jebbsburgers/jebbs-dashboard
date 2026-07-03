@@ -67,13 +67,16 @@ export function OrderWizardDrawer({
   );
 
   const availableSides = useMemo(
-    () => extras?.filter((e) => e.category === "sides" && e.is_available) ?? [],
+    () =>
+      (extras?.filter((e) => e.category === "sides" && e.is_available) ?? [])
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name)),
     [extras],
   );
 
   const extrasByCategory = useMemo(() => {
     if (!extras) return {};
-    return extras.reduce(
+    const grouped = extras.reduce(
       (acc, extra) => {
         if (extra.category === "sides") return acc;
         if (!acc[extra.category]) acc[extra.category] = [];
@@ -82,6 +85,10 @@ export function OrderWizardDrawer({
       },
       {} as Record<string, any[]>,
     );
+    Object.values(grouped).forEach((list) =>
+      list.sort((a, b) => a.name.localeCompare(b.name)),
+    );
+    return grouped;
   }, [extras]);
 
   const wizard = useOrderWizard({
@@ -519,6 +526,7 @@ export function OrderWizardDrawer({
           onOpenChange={wizard.customer.setIsEditingCustomer}
           customer={wizard.customer.selectedCustomer}
           onSelectAddress={wizard.customer.setSelectedAddress}
+          currentAddressId={wizard.customer.selectedAddress}
         />
       )}
     </>

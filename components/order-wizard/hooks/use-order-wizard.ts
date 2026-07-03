@@ -217,17 +217,23 @@ export function useOrderWizard({
         customerAddressId = address.id;
       }
 
+      // 🔑 Si quedó "delivery" sin dirección resuelta, cae a retiro en el local
+      const effectiveDeliveryType =
+        settings.deliveryType === "delivery" && !customerAddressId
+          ? "pickup"
+          : settings.deliveryType;
+
       const orderPayload = {
         customer_id: customerId ?? null,
         customer_name:
           customer.selectedCustomer?.name ?? customer.newCustomerData.name,
         customer_address_id:
-          settings.deliveryType === "delivery"
+          effectiveDeliveryType === "delivery"
             ? (customerAddressId ?? null)
             : null,
-        delivery_type: settings.deliveryType,
+        delivery_type: effectiveDeliveryType,
         delivery_fee:
-          settings.deliveryType === "delivery" ? settings.deliveryFee : 0,
+          effectiveDeliveryType === "delivery" ? settings.deliveryFee : 0,
         payment_method: settings.paymentMethod,
         discount_type: settings.discountType,
         discount_value: settings.discountValue,
@@ -236,7 +242,7 @@ export function useOrderWizard({
         discount_amount:
           orderTotal === 0
             ? subtotal +
-              (settings.deliveryType === "delivery" ? settings.deliveryFee : 0)
+              (effectiveDeliveryType === "delivery" ? settings.deliveryFee : 0)
             : discountAmount,
         items: allItems,
         notes: settings.notes || null,

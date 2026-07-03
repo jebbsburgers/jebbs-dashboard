@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Car, Home, MapPin, User, Edit, Clock } from "lucide-react";
+import { Car, Home, MapPin, User, Edit, Clock, Phone } from "lucide-react";
 import type { Order } from "@/lib/types";
 import { useOrderWithItems } from "@/lib/hooks/orders/use-orders";
 import { formatCurrency } from "@/lib/utils/format";
@@ -143,6 +143,13 @@ export function OrderDetailsModal({
                 <User className="h-4 w-4 text-muted-foreground" />
                 {orderWithItems.customer_name}
               </div>
+
+              {orderWithItems.customer?.phone && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Phone className="h-4 w-4" />
+                  <span>{orderWithItems.customer.phone}</span>
+                </div>
+              )}
 
               {orderWithItems.customer_address && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

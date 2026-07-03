@@ -17,7 +17,7 @@ export function useBurgerSelection(meatExtra?: { price: number } | null) {
       removedIngredients: [],
       selectedExtras: [],
       friesQuantity: burger.default_fries_quantity ?? 1,
-      isVeggie: false,
+      isVeggie: /veggie/i.test(burger.name),
     };
 
     setSelectedBurgers((prev) => [...prev, newBurger]);

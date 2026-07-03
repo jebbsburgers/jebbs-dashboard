@@ -70,6 +70,9 @@ export function useOrderWithItems(orderId: string | null) {
         .select(
           `
           *,
+          customer: customers (
+            phone
+          ),
           customer_address: customer_addresses (
             id,
             label,

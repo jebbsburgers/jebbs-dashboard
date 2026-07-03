@@ -106,7 +106,7 @@ export function useComboSelection() {
                           referenceFriesQuantity: s.rules?.no_fries
                             ? 0
                             : Number(burger.default_fries_quantity) ?? 1,
-                          isVeggie: false,
+                          isVeggie: /veggie/i.test(burger.name),
                           meatPriceAdjustment: 0,
                         },
                       ],

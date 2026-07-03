@@ -69,6 +69,7 @@ export interface Order {
   order_number: number;
   customer_id: string | null;
   customer_name: string;
+  customer?: { phone: string | null; customer_addresses?: CustomerAddress[] } | null;
   customer_address_id: string | null; // 🆕 Agregado de DB
   status: OrderStatus;
   is_paid: boolean;
@@ -118,6 +119,7 @@ export interface OrderItemWithExtras extends OrderItem {
 }
 
 export interface OrderWithItems extends Order {
+  customer?: { phone: string | null } | null;
   customer_address?: CustomerAddress | null; // Nombre consistente con DB
   items: OrderItemWithExtras[];
 }

@@ -24,6 +24,7 @@ import { formatCurrency, getRelativeTime } from "@/lib/utils/format";
 import { useTogglePaymentStatus, useQuickPatchOrder } from "@/lib/hooks/orders/use-orders";
 import { cn } from "@/lib/utils";
 import { formatOrderForWhatsapp } from "@/lib/utils/formatOrderWhatsapp";
+import { formatOrderForDelivery } from "@/lib/utils/formatOrderDelivery";
 import { toast } from "sonner";
 
 const statusConfig = {
@@ -107,6 +108,13 @@ export function OrderCard({
     toast.success("Pedido copiado para WhatsApp");
   };
 
+  const handleCopyDelivery = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = formatOrderForDelivery(order);
+    await navigator.clipboard.writeText(text);
+    toast.success("Pedido copiado para delivery");
+  };
+
   const status = visualStatus ?? order.status;
   const config = statusConfig[status as keyof typeof statusConfig];
 
@@ -147,12 +155,21 @@ export function OrderCard({
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              size="sm"
-              className="cursor-pointer"
+              size="icon-sm"
+              className="cursor-pointer rounded-full"
               onClick={handleCopy}
               title="Copiar para WhatsApp"
             >
               <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="cursor-pointer rounded-full"
+              onClick={handleCopyDelivery}
+              title="Copiar para delivery"
+            >
+              🛵
             </Button>
             <Badge className={config.className}>{config.label}</Badge>
             <button
