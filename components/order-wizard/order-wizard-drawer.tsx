@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import { useBurgers, useExtras, useCustomers } from "@/lib/hooks/use-menu";
-import { useCustomerAddresses } from "@/lib/hooks/use-customers";
+import { useBurgers, useExtras } from "@/lib/hooks/use-menu";
+import { useCustomers, useCustomerAddresses } from "@/lib/hooks/use-customers";
 import { useAllCombos } from "@/lib/hooks/use-combos";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/format";
@@ -50,7 +50,6 @@ export function OrderWizardDrawer({
   const isSubmittingRef = useRef(false);
 
   // ================= DATA LOADING =================
-  const { data: customers } = useCustomers();
   const { data: burgers } = useBurgers();
   const { data: extras } = useExtras();
   const { data: combos } = useAllCombos();
@@ -110,6 +109,11 @@ export function OrderWizardDrawer({
     }
   }, [open]);
 
+  // ================= CUSTOMER SEARCH (server-side, evita el corte de 1000 filas de PostgREST) =================
+  const { data: filteredCustomers = [] } = useCustomers(
+    wizard.customer.customerSearch,
+  );
+
   // ================= CUSTOMER ADDRESSES =================
   const { data: customerAddresses, isLoading: isLoadingAddresses } =
     useCustomerAddresses(wizard.customer.selectedCustomer?.id);
@@ -120,17 +124,6 @@ export function OrderWizardDrawer({
       (addr) => addr.id === wizard.customer.selectedAddress,
     );
   }, [customerAddresses, wizard.customer.selectedAddress]);
-
-  // ================= FILTERED CUSTOMERS =================
-  const filteredCustomers = useMemo(() => {
-    if (!customers || !wizard.customer.customerSearch) return customers || [];
-    const search = wizard.customer.customerSearch.toLowerCase();
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(search) ||
-        c.phone?.includes(wizard.customer.customerSearch),
-    );
-  }, [customers, wizard.customer.customerSearch]);
 
   useEffect(() => {
     setCustomerPage(1);
