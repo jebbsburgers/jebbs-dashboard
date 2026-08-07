@@ -46,6 +46,49 @@ function getWeekRange(date: Date): { start: Date; end: Date } {
 
 export type ViewMode = "month" | "week" | "custom";
 
+// ─── Payment method breakdown ───────────────────────────────────────────────
+
+export type MethodBuckets = {
+  cash: { amount: number; orders: number };
+  transfer: { amount: number; orders: number };
+  unknown: { amount: number; orders: number };
+};
+
+export interface PaymentBreakdown {
+  cash: { amount: number; orders: number; change: number };
+  transfer: { amount: number; orders: number; change: number };
+  other: { amount: number; change: number };
+  total: number;
+}
+
+// Classifies completed orders into cash/transfer/unknown buckets by
+// payment_method. Anything other than a strict "cash"/"transfer" match
+// (including null/undefined from rows predating the column) falls into
+// "unknown" — never silently attributed to cash.
+function bucketByPaymentMethod(
+  orders: { total_amount: number; payment_method?: string | null }[] | null | undefined
+): MethodBuckets {
+  const buckets: MethodBuckets = {
+    cash: { amount: 0, orders: 0 },
+    transfer: { amount: 0, orders: 0 },
+    unknown: { amount: 0, orders: 0 },
+  };
+  for (const o of orders || []) {
+    const amount = Number(o.total_amount);
+    if (o.payment_method === "cash") {
+      buckets.cash.amount += amount;
+      buckets.cash.orders += 1;
+    } else if (o.payment_method === "transfer") {
+      buckets.transfer.amount += amount;
+      buckets.transfer.orders += 1;
+    } else {
+      buckets.unknown.amount += amount;
+      buckets.unknown.orders += 1;
+    }
+  }
+  return buckets;
+}
+
 // ─── useOrdersHistory ───────────────────────────────────────────────────────
 
 export function useOrdersHistory(dateRange: { from: Date; to: Date }) {
@@ -158,13 +201,13 @@ export function useOrdersAnalytics(
       ] = await Promise.all([
         supabase
           .from("orders")
-          .select("total_amount, updated_at")
+          .select("total_amount, updated_at, payment_method")
           .eq("status", "completed")
           .gte("updated_at", start.toISOString())
           .lte("updated_at", end.toISOString()),
         supabase
           .from("orders")
-          .select("total_amount, updated_at")
+          .select("total_amount, updated_at, payment_method")
           .eq("status", "completed")
           .gte("updated_at", prevStart.toISOString())
           .lte("updated_at", prevEnd.toISOString()),
@@ -231,6 +274,32 @@ export function useOrdersAnalytics(
       const pct = (curr: number, p: number) =>
         p > 0 ? ((curr - p) / p) * 100 : 0;
 
+      // Payment method breakdown (cash / transfer / other)
+      // "Other" = unknown payment_method orders + all external_income, so
+      // cash + transfer + other === totalRevenue exactly.
+      const currentBuckets = bucketByPaymentMethod(current);
+      const prevBuckets = bucketByPaymentMethod(prev);
+      const currentOtherAmount = currentBuckets.unknown.amount + currentExternalRevenue;
+      const prevOtherAmount = prevBuckets.unknown.amount + prevExternalRevenue;
+
+      const paymentBreakdown: PaymentBreakdown = {
+        cash: {
+          amount: currentBuckets.cash.amount,
+          orders: currentBuckets.cash.orders,
+          change: pct(currentBuckets.cash.amount, prevBuckets.cash.amount),
+        },
+        transfer: {
+          amount: currentBuckets.transfer.amount,
+          orders: currentBuckets.transfer.orders,
+          change: pct(currentBuckets.transfer.amount, prevBuckets.transfer.amount),
+        },
+        other: {
+          amount: currentOtherAmount,
+          change: pct(currentOtherAmount, prevOtherAmount),
+        },
+        total: currentBuckets.cash.amount + currentBuckets.transfer.amount + currentOtherAmount,
+      };
+
       // Group completed by AR local date
       const dailyMap: Record<string, { orders: number; revenue: number; canceled: number }> = {};
       for (const o of current || []) {
@@ -280,6 +349,7 @@ export function useOrdersAnalytics(
         canceledOrders: currentCanceled,
         canceledOrdersChange: pct(currentCanceled, prevCanceled2),
         dailyData,
+        paymentBreakdown,
       };
     },
   });

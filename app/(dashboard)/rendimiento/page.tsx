@@ -35,6 +35,7 @@ import {
 } from "@/lib/hooks/orders/use-orders-history";
 import { formatCurrency } from "@/lib/utils/format";
 import { ExternalIncomePanel } from "@/components/analytics/external-income-panel";
+import { PaymentMethodBreakdown } from "@/components/analytics/payment-method-breakdown";
 import {
   ChartContainer,
   ChartTooltip,
@@ -405,6 +406,15 @@ export default function AnalyticsPage() {
             })}
           </div>
         )}
+
+        {/* Payment method breakdown */}
+        <div className="mt-4">
+          <PaymentMethodBreakdown
+            breakdown={analytics?.paymentBreakdown}
+            isLoading={analyticsLoading}
+            showChange={viewMode !== "custom"}
+          />
+        </div>
 
         {/* External income */}
         <div className="mt-4">
